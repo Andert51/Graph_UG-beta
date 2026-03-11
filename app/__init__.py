@@ -1,0 +1,1 @@
+"""GraphUG application package."""

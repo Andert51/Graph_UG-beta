@@ -1,0 +1,55 @@
+// GraphUG Mathematical Language Grammar
+// LALR(1) parser via Lark — single-statement per parse call.
+//
+// Operator precedence (low → high):
+//   + -   (additive)
+//   * /   (multiplicative)
+//   ^     (power, right-associative)
+//   unary -
+//   atom  (literal, symbol, call, vector, parenthesised)
+
+?start: statement
+
+?statement: assignment
+           | expr
+
+// ── Statements ──────────────────────────────────────────────────────────────
+
+assignment: NAME "=" expr
+
+// ── Expressions (precedence climb) ──────────────────────────────────────────
+
+?expr: sum
+
+?sum: product
+    | sum "+" product  -> add
+    | sum "-" product  -> sub
+
+?product: power
+        | product "*" power -> mul
+        | product "/" power -> div
+
+// Right-associative power: a^b^c = a^(b^c)
+?power: unary
+       | unary "^" power  -> pow
+
+?unary: "-" atom  -> neg
+       | atom
+
+?atom: NUMBER                          -> number
+     | NAME "(" arglist ")"            -> func_call
+     | NAME                            -> symbol
+     | "[" arglist "]"                 -> vector_literal
+     | "(" expr ")"
+
+// ── Shared helpers ───────────────────────────────────────────────────────────
+
+arglist: (expr ("," expr)*)?
+
+// ── Terminals ────────────────────────────────────────────────────────────────
+
+NAME: /[a-zA-Z_][a-zA-Z0-9_]*/
+NUMBER: /[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?/
+
+%import common.WS
+%ignore WS
