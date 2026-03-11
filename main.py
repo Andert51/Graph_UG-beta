@@ -28,6 +28,10 @@ _ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from app.utils.logger import get_logger
+
+_log = get_logger(__name__)
+
 import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
@@ -75,6 +79,7 @@ def _wire_dependencies(window: MainWindow) -> MainController:
 
 def main() -> None:
     """Application entry point."""
+    _log.info("GraphUG starting…")
     app = _build_application()
     window = MainWindow()
 

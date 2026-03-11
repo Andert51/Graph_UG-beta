@@ -33,8 +33,13 @@ class EditorPanel(QWidget):
     input_submitted: Signal = Signal(str)
     """Emitted with the full editor text when the user triggers evaluation."""
 
+    _MAX_HISTORY: int = 200
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._history: list[str] = []
+        self._history_index: int = -1
+        self._draft: str = ""
         self._build_ui()
 
     # ------------------------------------------------------------------
@@ -150,17 +155,65 @@ class EditorPanel(QWidget):
     # ------------------------------------------------------------------
 
     def eventFilter(self, watched: object, event: object) -> bool:  # type: ignore[override]
-        if (
-            watched is self._editor
-            and isinstance(event, QKeyEvent)
-            and event.key() == Qt.Key.Key_Return
-            and (event.modifiers() & Qt.KeyboardModifier.ShiftModifier)
-        ):
-            self._submit()
-            return True
+        if watched is self._editor and isinstance(event, QKeyEvent):
+            mods = event.modifiers()
+            key = event.key()
+
+            # Shift+Enter → evaluate
+            if key == Qt.Key.Key_Return and (mods & Qt.KeyboardModifier.ShiftModifier):
+                self._submit()
+                return True
+
+            # Ctrl+Up → navigate history backward
+            if key == Qt.Key.Key_Up and (mods & Qt.KeyboardModifier.ControlModifier):
+                self._history_back()
+                return True
+
+            # Ctrl+Down → navigate history forward
+            if key == Qt.Key.Key_Down and (mods & Qt.KeyboardModifier.ControlModifier):
+                self._history_forward()
+                return True
+
         return super().eventFilter(watched, event)
 
     def _submit(self) -> None:
         text = self._editor.toPlainText().strip()
         if text:
+            # Push to history (dedup consecutive duplicates)
+            if not self._history or self._history[-1] != text:
+                self._history.append(text)
+                if len(self._history) > self._MAX_HISTORY:
+                    self._history.pop(0)
+            self._history_index = -1
+            self._draft = ""
             self.input_submitted.emit(text)
+
+    # ------------------------------------------------------------------
+    # History navigation
+    # ------------------------------------------------------------------
+
+    def _history_back(self) -> None:
+        """Replace editor content with the previous history entry (Ctrl+Up)."""
+        if not self._history:
+            return
+        if self._history_index == -1:
+            # Save current editor text as draft
+            self._draft = self._editor.toPlainText()
+            self._history_index = len(self._history) - 1
+        elif self._history_index > 0:
+            self._history_index -= 1
+        else:
+            return
+        self._editor.setPlainText(self._history[self._history_index])
+
+    def _history_forward(self) -> None:
+        """Replace editor content with the next history entry (Ctrl+Down)."""
+        if self._history_index == -1:
+            return
+        if self._history_index < len(self._history) - 1:
+            self._history_index += 1
+            self._editor.setPlainText(self._history[self._history_index])
+        else:
+            # Restore draft
+            self._history_index = -1
+            self._editor.setPlainText(self._draft)

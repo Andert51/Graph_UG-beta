@@ -29,6 +29,9 @@ from app.core.interfaces.i_controller import IController
 from app.core.interfaces.i_evaluator import IEvaluator
 from app.core.interfaces.i_renderer import IRenderer
 from app.core.models.math_result import MathResult
+from app.utils.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 class MainController(QObject, IController):
@@ -61,9 +64,11 @@ class MainController(QObject, IController):
         Performs: parse → evaluate → render (if applicable) → emit result.
         On any failure the error is forwarded to the View without crashing.
         """
+        _log.debug("handle_input: %d chars", len(source))
         result: MathResult = self._evaluator.evaluate(source)
 
         if result.is_error:
+            _log.warning("Evaluation error: %s", result.error)
             self.error_occurred.emit(result.error)  # type: ignore[arg-type]
             return
 

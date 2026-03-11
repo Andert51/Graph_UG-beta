@@ -1,12 +1,18 @@
-// GraphUG Mathematical Language Grammar
-// LALR(1) parser via Lark — single-statement per parse call.
+// GraphUG Mathematical Language Grammar — v0.2
+// LALR(1) parser via Lark
 //
 // Operator precedence (low → high):
-//   + -   (additive)
-//   * /   (multiplicative)
-//   ^     (power, right-associative)
-//   unary -
-//   atom  (literal, symbol, call, vector, parenthesised)
+//   ==  !=  <  >  <=  >=      (comparison)
+//   + -                        (additive)
+//   * / %                      (multiplicative / modulo)
+//   ^                          (power, right-associative)
+//   unary - +
+//   postfix  (index / property access)
+//   atom     (literal, symbol, call, vector, matrix, parenthesised)
+//
+// Semicolons and newlines both separate statements within a single
+// parse call, but the evaluator still processes line-by-line so use
+// this for inline multi-statement via "a = 1; b = 2".
 
 ?start: statement
 
@@ -19,7 +25,15 @@ assignment: NAME "=" expr
 
 // ── Expressions (precedence climb) ──────────────────────────────────────────
 
-?expr: sum
+?expr: comparison
+
+?comparison: sum
+           | comparison "==" sum  -> eq
+           | comparison "!=" sum  -> ne
+           | comparison "<"  sum  -> lt
+           | comparison ">"  sum  -> gt
+           | comparison "<=" sum  -> le
+           | comparison ">=" sum  -> ge
 
 ?sum: product
     | sum "+" product  -> add
@@ -28,19 +42,36 @@ assignment: NAME "=" expr
 ?product: power
         | product "*" power -> mul
         | product "/" power -> div
+        | product "%" power -> mod
 
 // Right-associative power: a^b^c = a^(b^c)
 ?power: unary
        | unary "^" power  -> pow
 
 ?unary: "-" atom  -> neg
+       | "+" atom -> pos
        | atom
 
-?atom: NUMBER                          -> number
-     | NAME "(" arglist ")"            -> func_call
-     | NAME                            -> symbol
-     | "[" arglist "]"                 -> vector_literal
-     | "(" expr ")"
+// ── Postfix: element access ─────────────────────────────────────────────────
+
+?atom: atom_base
+     | atom_base "(" arglist ")"   -> func_call_expr
+
+?atom_base: NUMBER                         -> number
+          | STRING                         -> string
+          | NAME "(" arglist ")"           -> func_call
+          | NAME                           -> symbol
+          | "[" bracket_body "]"
+          | "(" expr ")"
+
+// Bracket body: disambiguates vectors from matrices.
+// [1, 2, 3]       → vector (no semicolons)
+// [1, 2; 3, 4]    → matrix (has semicolons)
+?bracket_body: row ";" row (";" row)*  -> matrix_literal
+             | arglist                 -> vector_literal
+
+// Matrix literal: [1,2; 3,4] parses as two row nodes
+row: expr ("," expr)*
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -50,6 +81,7 @@ arglist: (expr ("," expr)*)?
 
 NAME: /[a-zA-Z_][a-zA-Z0-9_]*/
 NUMBER: /[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?/
+STRING: /\"[^\"]*\"|\'[^\']*\'/
 
 %import common.WS
 %ignore WS

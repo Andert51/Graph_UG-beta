@@ -19,6 +19,9 @@ import pyqtgraph as pg
 
 from app.core.interfaces.i_renderer import IRenderer
 from app.core.models.plot_command import PlotCommand, PlotKind
+from app.utils.logger import get_logger
+
+_log = get_logger(__name__)
 
 
 class PyQtGraphRenderer(IRenderer):
@@ -41,6 +44,7 @@ class PyQtGraphRenderer(IRenderer):
 
     def render(self, command: PlotCommand) -> None:
         """Dispatch *command* to the appropriate private handler."""
+        _log.debug("render: kind=%s label=%r", command.kind.name, command.label)
         match command.kind:
             case PlotKind.LINE_2D:
                 self._render_line_2d(command)

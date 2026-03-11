@@ -1,4 +1,4 @@
-"""Symbolic computation layer — SymPy integration (Phase 2 placeholder).
+"""Symbolic computation layer — SymPy integration.
 
 SymPy is imported lazily to avoid slowing down cold starts in environments
 where symbolic algebra is not needed.  All public functions check
@@ -35,6 +35,20 @@ def simplify(expr_str: str) -> str:
     return str(sp.simplify(expr))
 
 
+def factor(expr_str: str) -> str:
+    """Factor *expr_str* into irreducible components."""
+    _require_sympy()
+    expr = sp.sympify(expr_str)
+    return str(sp.factor(expr))
+
+
+def expand(expr_str: str) -> str:
+    """Expand *expr_str* (distribute products, open brackets)."""
+    _require_sympy()
+    expr = sp.sympify(expr_str)
+    return str(sp.expand(expr))
+
+
 def diff(expr_str: str, var: str = "x") -> str:
     """Differentiate *expr_str* with respect to *var*."""
     _require_sympy()
@@ -49,3 +63,12 @@ def integrate(expr_str: str, var: str = "x") -> str:
     x = sp.Symbol(var)
     expr = sp.sympify(expr_str)
     return str(sp.integrate(expr, x))
+
+
+def solve(expr_str: str, var: str = "x") -> str:
+    """Solve *expr_str* = 0 for *var*.  Returns comma-separated roots."""
+    _require_sympy()
+    x = sp.Symbol(var)
+    expr = sp.sympify(expr_str)
+    solutions = sp.solve(expr, x)
+    return ", ".join(str(s) for s in solutions)

@@ -45,6 +45,13 @@ class SymbolNode(ASTNode):
     name: str = ""
 
 
+@dataclass
+class StringNode(ASTNode):
+    """A string literal, e.g. ``"x^2 + 1"``."""
+
+    value: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Operator nodes
 # ---------------------------------------------------------------------------
@@ -85,6 +92,13 @@ class VectorNode(ASTNode):
     """A row-vector literal: ``[e1, e2, …]``."""
 
     elements: list[ASTNode] = field(default_factory=list)
+
+
+@dataclass
+class MatrixNode(ASTNode):
+    """A matrix literal: ``[r1c1, r1c2; r2c1, r2c2]``."""
+
+    rows: list[list[ASTNode]] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

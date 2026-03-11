@@ -12,7 +12,7 @@ Architectural contract
 Layout
 ------
   ┌─────────────────────────────────────────────────────┐
-  │  QMenuBar  (File · Edit · Insert)                   │
+  │  QMenuBar  (File · Edit · View · Insert · Help)     │
   ├────────────────────────┬────────────────────────────┤
   │  EditorPanel           │  CanvasPanel               │
   │  (editor + console)    │  (pg.PlotWidget)            │
@@ -28,11 +28,14 @@ from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
+    QFileDialog,
     QMainWindow,
     QSplitter,
     QStatusBar,
 )
 
+from app.gui.dialogs.about_dialog import AboutDialog
+from app.gui.dialogs.insert_matrix_dialog import InsertMatrixDialog
 from app.gui.dialogs.insert_vector_dialog import InsertVectorDialog
 from app.gui.styles.dark_theme import DARK_STYLESHEET
 from app.gui.widgets.canvas_panel import CanvasPanel
@@ -117,6 +120,14 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        export_act = QAction("&Export Canvas…", self)
+        export_act.setShortcut(QKeySequence("Ctrl+E"))
+        export_act.setStatusTip("Save the current canvas as a PNG image")
+        export_act.triggered.connect(self._on_export_canvas)
+        file_menu.addAction(export_act)
+
+        file_menu.addSeparator()
+
         quit_act = QAction("&Quit", self)
         quit_act.setShortcut(QKeySequence.StandardKey.Quit)
         quit_act.triggered.connect(QApplication.quit)
@@ -135,6 +146,27 @@ class MainWindow(QMainWindow):
         clear_canvas_act.triggered.connect(self._canvas.plot_widget.clear)
         edit_menu.addAction(clear_canvas_act)
 
+        # ── View ──────────────────────────────────────────────────────
+        view_menu = mb.addMenu("&View")
+
+        self._toggle_editor_act = QAction("Show &Editor", self)
+        self._toggle_editor_act.setCheckable(True)
+        self._toggle_editor_act.setChecked(True)
+        self._toggle_editor_act.setShortcut(QKeySequence("Ctrl+1"))
+        self._toggle_editor_act.toggled.connect(
+            lambda checked: self._editor.setVisible(checked)
+        )
+        view_menu.addAction(self._toggle_editor_act)
+
+        self._toggle_canvas_act = QAction("Show &Canvas", self)
+        self._toggle_canvas_act.setCheckable(True)
+        self._toggle_canvas_act.setChecked(True)
+        self._toggle_canvas_act.setShortcut(QKeySequence("Ctrl+2"))
+        self._toggle_canvas_act.toggled.connect(
+            lambda checked: self._canvas.setVisible(checked)
+        )
+        view_menu.addAction(self._toggle_canvas_act)
+
         # ── Insert ────────────────────────────────────────────────────
         insert_menu = mb.addMenu("&Insert")
 
@@ -143,6 +175,19 @@ class MainWindow(QMainWindow):
         vector_act.setStatusTip("Open the Insert Vector dialog")
         vector_act.triggered.connect(self._on_insert_vector)
         insert_menu.addAction(vector_act)
+
+        matrix_act = QAction("&Matrix…", self)
+        matrix_act.setShortcut(QKeySequence("Ctrl+Shift+M"))
+        matrix_act.setStatusTip("Open the Insert Matrix dialog")
+        matrix_act.triggered.connect(self._on_insert_matrix)
+        insert_menu.addAction(matrix_act)
+
+        # ── Help ──────────────────────────────────────────────────────
+        help_menu = mb.addMenu("&Help")
+
+        about_act = QAction("&About GraphUG", self)
+        about_act.triggered.connect(self._on_about)
+        help_menu.addAction(about_act)
 
     def _build_status_bar(self) -> None:
         self._status = QStatusBar()
@@ -165,3 +210,28 @@ class MainWindow(QMainWindow):
         dialog = InsertVectorDialog(self)
         if dialog.exec() == InsertVectorDialog.DialogCode.Accepted:
             self._editor.input_submitted.emit(dialog.command)
+
+    def _on_insert_matrix(self) -> None:
+        """Open the matrix dialog; on accept, submit the generated command."""
+        dialog = InsertMatrixDialog(self)
+        if dialog.exec() == InsertMatrixDialog.DialogCode.Accepted:
+            self._editor.input_submitted.emit(dialog.command)
+
+    def _on_export_canvas(self) -> None:
+        """Save the current canvas to a PNG file."""
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Canvas",
+            "graphug_plot.png",
+            "PNG Images (*.png);;All Files (*)",
+        )
+        if path:
+            import pyqtgraph.exporters as exporters
+
+            exporter = exporters.ImageExporter(self._canvas.plot_widget.plotItem)
+            exporter.export(path)
+            self._status.showMessage(f"Canvas exported to {path}", 5_000)
+
+    def _on_about(self) -> None:
+        """Show the About dialog."""
+        AboutDialog(self).exec()
