@@ -50,6 +50,11 @@ class MainWindow(QMainWindow):
     The controller connects to this to reset the evaluator scope.
     """
 
+    canvas_clear_requested: Signal = Signal()
+    """Emitted when the user triggers Edit → Clear Canvas.
+    The controller connects to this to clear the renderer properly.
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("GraphUG — Interactive Mathematical Environment")
@@ -143,7 +148,7 @@ class MainWindow(QMainWindow):
 
         clear_canvas_act = QAction("Clear &Canvas", self)
         clear_canvas_act.setShortcut(QKeySequence("Ctrl+Shift+L"))
-        clear_canvas_act.triggered.connect(self._canvas.plot_widget.clear)
+        clear_canvas_act.triggered.connect(self._on_clear_canvas)
         edit_menu.addAction(clear_canvas_act)
 
         # ── View ──────────────────────────────────────────────────────
@@ -192,18 +197,22 @@ class MainWindow(QMainWindow):
     def _build_status_bar(self) -> None:
         self._status = QStatusBar()
         self.setStatusBar(self._status)
-        self._status.showMessage("Ready  ·  GraphUG v0.1")
+        self._status.showMessage("Ready  ·  GraphUG v0.3")
 
     # ------------------------------------------------------------------
     # Internal slots
     # ------------------------------------------------------------------
 
     def _on_new_session(self) -> None:
-        """Reset editor output and canvas, then signal the controller."""
+        """Reset editor output, then signal the controller (which clears canvas)."""
         self._editor.clear_output()
-        self._canvas.plot_widget.clear()
         self._status.showMessage("Session cleared.", 3_000)
         self.session_reset_requested.emit()
+
+    def _on_clear_canvas(self) -> None:
+        """Signal the controller to clear the renderer (and canvas)."""
+        self.canvas_clear_requested.emit()
+        self._status.showMessage("Canvas cleared.", 3_000)
 
     def _on_insert_vector(self) -> None:
         """Open the vector dialog; on accept, submit the generated command."""

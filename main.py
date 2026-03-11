@@ -48,7 +48,7 @@ def _build_application() -> QApplication:
     configure_pyqtgraph()
     app = QApplication(sys.argv)
     app.setApplicationName("GraphUG")
-    app.setApplicationVersion("0.1.0")
+    app.setApplicationVersion("0.3.0")
     app.setOrganizationName("GraphUG Project")
     # Enable high-DPI scaling
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
@@ -73,6 +73,9 @@ def _wire_dependencies(window: MainWindow) -> MainController:
 
     # "New Session" UI cleanup (canvas + output) → controller state reset
     window.session_reset_requested.connect(controller.reset_session)
+
+    # "Clear Canvas" → controller clears renderer items properly
+    window.canvas_clear_requested.connect(controller.clear_canvas)
 
     return controller
 

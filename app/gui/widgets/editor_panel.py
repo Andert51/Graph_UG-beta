@@ -26,6 +26,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.gui.widgets.line_number_editor import LineNumberEditor
+from app.gui.widgets.syntax_highlighter import GraphUGHighlighter
+
 
 class EditorPanel(QWidget):
     """Composite widget: code editor (top) + toolbar + console output (bottom)."""
@@ -88,7 +91,7 @@ class EditorPanel(QWidget):
         mono = self._mono_font()
 
         # ── Code editor ──────────────────────────────────────────────
-        self._editor = QPlainTextEdit()
+        self._editor = LineNumberEditor()
         self._editor.setFont(mono)
         self._editor.setPlaceholderText(
             "# GraphUG mathematical environment\n"
@@ -97,6 +100,7 @@ class EditorPanel(QWidget):
             "plot(x, sin(x))"
         )
         self._editor.installEventFilter(self)
+        self._highlighter = GraphUGHighlighter(self._editor.document())
         root.addWidget(self._editor, stretch=6)
 
         # ── Run / Clear toolbar ───────────────────────────────────────

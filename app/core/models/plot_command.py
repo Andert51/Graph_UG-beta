@@ -8,7 +8,7 @@ from typing import Any
 
 
 class PlotKind(Enum):
-    """Supported plot primitives in phase 1."""
+    """Supported plot primitives."""
 
     LINE_2D = auto()
     SCATTER = auto()
@@ -16,6 +16,7 @@ class PlotKind(Enum):
     BAR = auto()
     HISTOGRAM = auto()
     SURFACE_3D = auto()  # reserved — phase 2
+    CANVAS_CMD = auto()  # axis labels, title, grid toggle
 
 
 @dataclass(slots=True)

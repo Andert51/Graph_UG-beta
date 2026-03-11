@@ -37,6 +37,7 @@ from app.core.models.plot_command import PlotCommand, PlotKind
 from app.utils.logger import get_logger
 
 _log = get_logger(__name__)
+
 from app.math_engine.symbolic import (
     is_available as _sympy_available,
     simplify as _sym_simplify,
@@ -138,6 +139,20 @@ class _MathTransformer(Transformer):
     def ge(self, l: ASTNode, r: ASTNode) -> BinaryOpNode:
         return BinaryOpNode(op=">=", left=l, right=r)
 
+    # ── Logical ───────────────────────────────────────────────────────
+
+    @v_args(inline=True)
+    def logic_or(self, left: ASTNode, right: ASTNode) -> BinaryOpNode:
+        return BinaryOpNode(op="or", left=left, right=right)
+
+    @v_args(inline=True)
+    def logic_and(self, left: ASTNode, right: ASTNode) -> BinaryOpNode:
+        return BinaryOpNode(op="and", left=left, right=right)
+
+    @v_args(inline=True)
+    def logic_not(self, operand: ASTNode) -> UnaryOpNode:
+        return UnaryOpNode(op="not", operand=operand)
+
     # ── Unary ─────────────────────────────────────────────────────────
 
     @v_args(inline=True)
@@ -232,6 +247,9 @@ class MathEvaluator(IEvaluator):
         "nan": math.nan,
         "true": 1.0,
         "false": 0.0,
+        # Type / introspection
+        "typeof": lambda v: type(v).__name__,
+        "size": lambda v: np.asarray(v).shape,
     }
 
     def __init__(self) -> None:
@@ -242,6 +260,7 @@ class MathEvaluator(IEvaluator):
             transformer=_MathTransformer(),
         )
         self._scope: dict[str, Any] = dict(self._BUILTINS)
+        self._hold_mode: bool = False
         _log.info("MathEvaluator initialised (grammar=%s)", _GRAMMAR_PATH.name)
 
     # ------------------------------------------------------------------
@@ -320,6 +339,44 @@ class MathEvaluator(IEvaluator):
     def reset_state(self) -> None:
         """Restore the scope to factory defaults (built-ins only)."""
         self._scope = dict(self._BUILTINS)
+        self._hold_mode = False
+
+    @property
+    def hold_mode(self) -> bool:
+        """Whether the evaluator is in hold mode (overlay plots)."""
+        return self._hold_mode
+
+    # ------------------------------------------------------------------
+    # Pretty-print helper
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _format_value(val: Any) -> str:
+        """Return a human-friendly string for *val*."""
+        if isinstance(val, np.ndarray):
+            if val.ndim == 1:
+                elems = ", ".join(f"{v:g}" for v in val[:20])
+                suffix = ", …" if len(val) > 20 else ""
+                return f"[{elems}{suffix}]  ({len(val)} elements)"
+            if val.ndim == 2:
+                rows_repr: list[str] = []
+                for i, row in enumerate(val[:10]):
+                    elems = ", ".join(f"{v:g}" for v in row[:10])
+                    suffix = ", …" if len(row) > 10 else ""
+                    rows_repr.append(f"  [{elems}{suffix}]")
+                suffix_rows = "\n  …" if val.shape[0] > 10 else ""
+                inner = "\n".join(rows_repr) + suffix_rows
+                return f"[{val.shape[0]}×{val.shape[1]}] matrix:\n{inner}"
+            return repr(val)
+        if isinstance(val, float):
+            if val == int(val) and not (math.isnan(val) or math.isinf(val)):
+                return str(int(val))
+            return f"{val:g}"
+        if isinstance(val, str):
+            return repr(val)
+        if isinstance(val, tuple):
+            return " × ".join(str(int(d)) for d in val)
+        return repr(val)
 
     # ------------------------------------------------------------------
     # Private dispatch
@@ -329,10 +386,10 @@ class MathEvaluator(IEvaluator):
         """Dispatch evaluation to the appropriate handler via structural matching."""
         match node:
             case NumberNode():
-                return MathResult(value=node.value, output_text=str(node.value))
+                return MathResult(value=node.value, output_text=self._format_value(node.value))
 
             case StringNode():
-                return MathResult(value=node.value, output_text=repr(node.value))
+                return MathResult(value=node.value, output_text=self._format_value(node.value))
 
             case SymbolNode():
                 return self._eval_symbol(node)
@@ -342,8 +399,13 @@ class MathEvaluator(IEvaluator):
 
             case UnaryOpNode():
                 val = self._eval_node(node.operand).value
-                result = -val if node.op == "-" else val
-                return MathResult(value=result, output_text=repr(result))
+                if node.op == "not":
+                    result = float(not val) if np.isscalar(val) else (~np.asarray(val, dtype=bool)).astype(float)
+                elif node.op == "-":
+                    result = -val
+                else:
+                    result = val
+                return MathResult(value=result, output_text=self._format_value(result))
 
             case FuncCallNode():
                 return self._eval_func(node)
@@ -364,13 +426,18 @@ class MathEvaluator(IEvaluator):
         if node.name not in self._scope:
             raise UndefinedSymbolError(node.name)
         val = self._scope[node.name]
-        return MathResult(value=val, output_text=repr(val))
+        return MathResult(value=val, output_text=self._format_value(val))
 
     def _eval_binary(self, node: BinaryOpNode) -> MathResult:
         lv = self._eval_node(node.left).value
         rv = self._eval_node(node.right).value
         match node.op:
-            case "+": val = lv + rv
+            case "+":
+                # String concatenation: "hello" + " world"
+                if isinstance(lv, str) or isinstance(rv, str):
+                    val = str(lv) + str(rv)
+                else:
+                    val = lv + rv
             case "-": val = lv - rv
             case "*": val = lv * rv
             case "/": val = lv / rv
@@ -382,8 +449,10 @@ class MathEvaluator(IEvaluator):
             case ">":  val = float(np.all(lv > rv))
             case "<=": val = float(np.all(lv <= rv))
             case ">=": val = float(np.all(lv >= rv))
+            case "and": val = float(bool(lv) and bool(rv))
+            case "or":  val = float(bool(lv) or bool(rv))
             case _: raise EvaluationError(f"Unknown operator: {node.op!r}")
-        return MathResult(value=val, output_text=repr(val))
+        return MathResult(value=val, output_text=self._format_value(val))
 
     def _eval_func(self, node: FuncCallNode) -> MathResult:
         # Built-in plot commands — handled separately to produce PlotCommand DTOs
@@ -402,6 +471,16 @@ class MathEvaluator(IEvaluator):
         if node.name in ("simplify", "factor", "expand", "diff", "integrate", "solve"):
             return self._eval_symbolic_call(node)
 
+        # Canvas commands — xlabel, ylabel, title, grid
+        if node.name in ("xlabel", "ylabel", "title", "grid"):
+            return self._eval_canvas_cmd(node)
+        # Hold / clear commands
+        if node.name == "hold":
+            return self._eval_hold_call(node)
+        # Help command
+        if node.name == "help":
+            return self._eval_help_call(node)
+
         if node.name not in self._scope:
             raise UndefinedSymbolError(node.name)
         fn = self._scope[node.name]
@@ -409,12 +488,12 @@ class MathEvaluator(IEvaluator):
             raise EvaluationError(f"'{node.name}' is not callable")
         args = [self._eval_node(a).value for a in node.args]
         val = fn(*args)
-        return MathResult(value=val, output_text=repr(val))
+        return MathResult(value=val, output_text=self._format_value(val))
 
     def _eval_vector(self, node: VectorNode) -> MathResult:
         elements = [self._eval_node(e).value for e in node.elements]
         val = np.array(elements, dtype=float)
-        return MathResult(value=val, output_text=repr(val))
+        return MathResult(value=val, output_text=self._format_value(val))
 
     def _eval_matrix(self, node: MatrixNode) -> MathResult:
         """Evaluate a matrix literal ``[1,2; 3,4]`` to a 2-D ``np.ndarray``."""
@@ -430,7 +509,7 @@ class MathEvaluator(IEvaluator):
                 )
             rows.append(row_vals)
         val = np.array(rows, dtype=float)
-        return MathResult(value=val, output_text=repr(val))
+        return MathResult(value=val, output_text=self._format_value(val))
 
     def _eval_assignment(self, node: AssignmentNode) -> MathResult:
         result = self._eval_node(node.value)
@@ -441,7 +520,7 @@ class MathEvaluator(IEvaluator):
         self._scope[node.name] = result.value
         return MathResult(
             value=result.value,
-            output_text=f"{node.name} = {result.output_text}",
+            output_text=f"{node.name} = {self._format_value(result.value)}",
         )
 
     def _eval_plot_call(self, node: FuncCallNode) -> MathResult:
@@ -551,3 +630,64 @@ class MathEvaluator(IEvaluator):
         fn = self._SYMBOLIC_DISPATCH[node.name]
         result_str = fn(*args)
         return MathResult(value=result_str, output_text=result_str)
+
+    # ------------------------------------------------------------------
+    # Canvas command helpers
+    # ------------------------------------------------------------------
+
+    def _eval_canvas_cmd(self, node: FuncCallNode) -> MathResult:
+        """Handle ``xlabel("X")``, ``ylabel("Y")``, ``title("T")``, ``grid()``."""
+        args = [self._eval_node(a).value for a in node.args]
+        data: dict[str, Any] = {"cmd": node.name}
+        if node.name in ("xlabel", "ylabel", "title"):
+            if not args or not isinstance(args[0], str):
+                raise EvaluationError(f'{node.name}() requires a string argument')
+            data["text"] = args[0]
+        elif node.name == "grid":
+            # grid() toggles; grid(1)/grid(0) sets explicitly
+            data["visible"] = bool(args[0]) if args else None
+        cmd = PlotCommand(kind=PlotKind.CANVAS_CMD, data=data)
+        return MathResult(
+            plot_commands=[cmd],
+            output_text=f"→ {node.name} set",
+        )
+
+    def _eval_hold_call(self, node: FuncCallNode) -> MathResult:
+        """Handle ``hold()``, ``hold(1)``, ``hold(0)``."""
+        args = [self._eval_node(a).value for a in node.args]
+        if args:
+            self._hold_mode = bool(args[0])
+        else:
+            self._hold_mode = not self._hold_mode
+        state = "on" if self._hold_mode else "off"
+        return MathResult(
+            value=float(self._hold_mode),
+            output_text=f"→ hold {state}",
+        )
+
+    def _eval_help_call(self, node: FuncCallNode) -> MathResult:
+        """Handle ``help()`` — list all available functions and constants."""
+        functions = sorted(
+            k for k, v in self._BUILTINS.items() if callable(v)
+        )
+        constants = sorted(
+            k for k, v in self._BUILTINS.items() if not callable(v)
+        )
+        commands = [
+            "plot(y) / plot(x,y)", "scatter(x,y)", "vector(dx,dy) / vector(x0,y0,dx,dy)",
+            "bar(h) / bar(x,h)", "hist(data) / hist(data,bins)",
+            "xlabel(s) / ylabel(s) / title(s)", "grid() / grid(1/0)",
+            "hold() / hold(1/0)", "help()",
+            'simplify("expr")', 'factor("expr")', 'expand("expr")',
+            'diff("expr","var")', 'integrate("expr","var")', 'solve("expr","var")',
+        ]
+        lines = [
+            "── GraphUG Help ──",
+            f"Functions ({len(functions)}): " + ", ".join(functions),
+            f"Constants ({len(constants)}): " + ", ".join(constants),
+            "Commands: " + " | ".join(commands),
+            "Operators: + - * / % ^ == != < > <= >= and or not",
+            "Syntax: var = expr ; [v1,v2] ; [r1;r2] matrix",
+        ]
+        text = "\n".join(lines)
+        return MathResult(value=text, output_text=text)

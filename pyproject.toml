@@ -1,6 +1,6 @@
 [project]
 name = "graphug"
-version = "0.1.0"
+version = "0.3.0"
 description = "GraphUG – Interactive Mathematical Environment (MATLAB-like desktop app)"
 readme = "README.md"
 requires-python = ">=3.10"

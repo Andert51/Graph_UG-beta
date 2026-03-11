@@ -41,3 +41,8 @@ class IEvaluator(ABC):
         """Clear all persistent state (variables, previous results) from the
         evaluator's session scope, restoring factory defaults."""
         ...
+
+    @property
+    def hold_mode(self) -> bool:
+        """Whether new plots should overlay existing ones."""
+        return False

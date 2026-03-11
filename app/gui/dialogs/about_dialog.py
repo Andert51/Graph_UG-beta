@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 
-_VERSION = "0.2.0"
+_VERSION = "0.3.0"
 
 _ABOUT_HTML = f"""\
 <h2 style="margin-bottom: 4px;">GraphUG</h2>

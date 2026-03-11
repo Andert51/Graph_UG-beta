@@ -49,7 +49,7 @@ class TestPlotCommand:
         assert cmd.kind == PlotKind.SCATTER
 
     def test_all_plot_kinds_exist(self) -> None:
-        expected = {"LINE_2D", "SCATTER", "VECTOR_2D", "BAR", "HISTOGRAM", "SURFACE_3D"}
+        expected = {"LINE_2D", "SCATTER", "VECTOR_2D", "BAR", "HISTOGRAM", "SURFACE_3D", "CANVAS_CMD"}
         actual = {k.name for k in PlotKind}
         assert expected == actual
 

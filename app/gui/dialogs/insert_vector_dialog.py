@@ -45,12 +45,7 @@ class InsertVectorDialog(QDialog):
         y0 = self._y0.value()
         dx = self._dx.value()
         dy = self._dy.value()
-        x1 = x0 + dx
-        y1 = y0 + dy
-        return (
-            f"# Vector: origin=({x0}, {y0}), Δ=({dx}, {dy})\n"
-            f"plot([{x0}, {x1}], [{y0}, {y1}])"
-        )
+        return f"vector({x0:g}, {y0:g}, {dx:g}, {dy:g})"
 
     # ------------------------------------------------------------------
     # UI construction

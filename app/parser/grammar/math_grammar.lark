@@ -1,11 +1,14 @@
-// GraphUG Mathematical Language Grammar — v0.2
+// GraphUG Mathematical Language Grammar — v0.3
 // LALR(1) parser via Lark
 //
 // Operator precedence (low → high):
-//   ==  !=  <  >  <=  >=      (comparison)
-//   + -                        (additive)
-//   * / %                      (multiplicative / modulo)
-//   ^                          (power, right-associative)
+//   or                          (logical disjunction)
+//   and                         (logical conjunction)
+//   not                         (logical negation)
+//   ==  !=  <  >  <=  >=       (comparison)
+//   + -                         (additive)
+//   * / %                       (multiplicative / modulo)
+//   ^                           (power, right-associative)
 //   unary - +
 //   postfix  (index / property access)
 //   atom     (literal, symbol, call, vector, matrix, parenthesised)
@@ -25,7 +28,16 @@ assignment: NAME "=" expr
 
 // ── Expressions (precedence climb) ──────────────────────────────────────────
 
-?expr: comparison
+?expr: or_expr
+
+?or_expr: and_expr
+        | or_expr "or" and_expr  -> logic_or
+
+?and_expr: not_expr
+         | and_expr "and" not_expr -> logic_and
+
+?not_expr: comparison
+         | "not" not_expr        -> logic_not
 
 ?comparison: sum
            | comparison "==" sum  -> eq

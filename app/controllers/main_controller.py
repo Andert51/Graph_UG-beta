@@ -29,6 +29,7 @@ from app.core.interfaces.i_controller import IController
 from app.core.interfaces.i_evaluator import IEvaluator
 from app.core.interfaces.i_renderer import IRenderer
 from app.core.models.math_result import MathResult
+from app.core.models.plot_command import PlotKind
 from app.utils.logger import get_logger
 
 _log = get_logger(__name__)
@@ -72,6 +73,14 @@ class MainController(QObject, IController):
             self.error_occurred.emit(result.error)  # type: ignore[arg-type]
             return
 
+        # Auto-clear canvas before rendering new plots (unless hold mode)
+        has_visual_plots = any(
+            cmd.kind not in (PlotKind.CANVAS_CMD,)
+            for cmd in result.plot_commands
+        )
+        if has_visual_plots and not self._evaluator.hold_mode:
+            self._renderer.clear()
+
         for cmd in result.plot_commands:
             try:
                 self._renderer.render(cmd)
@@ -89,3 +98,7 @@ class MainController(QObject, IController):
         self._evaluator.reset_state()
         self._renderer.clear()
         self.result_ready.emit("Session reset.")
+
+    def clear_canvas(self) -> None:
+        """Clear only the canvas (renderer items), not the evaluator scope."""
+        self._renderer.clear()

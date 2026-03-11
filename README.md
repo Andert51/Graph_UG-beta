@@ -12,15 +12,20 @@ Built with **PySide6** (GUI), **PyQtGraph** (plotting), **Lark** (LALR parser), 
 |---|---|
 | **Arithmetic** | `+`, `-`, `*`, `/`, `%`, `^` (right-associative), unary `-`/`+`, parentheses |
 | **Comparisons** | `==`, `!=`, `<`, `>`, `<=`, `>=` |
+| **Logical** | `and`, `or`, `not` — with correct precedence |
 | **Variables** | `x = 42`, `y = x^2 + 1` — persistent across evaluations |
 | **Vectors** | `[1, 2, 3]` — NumPy array literals |
 | **Matrices** | `[1, 2; 3, 4]` — semicolons separate rows |
 | **Functions** | 40+ builtins — trig, hyperbolic, rounding, linear algebra, statistics |
-| **Plotting** | `plot()`, `scatter()`, `vector()`, `bar()`, `hist()` |
+| **Plotting** | `plot()`, `scatter()`, `vector()`, `bar()`, `hist()` with auto colour cycling |
+| **Canvas** | `xlabel()`, `ylabel()`, `title()`, `grid()` — axis labels and grid toggle |
+| **Hold mode** | `hold()` / `hold(1)` — overlay multiple plots |
 | **Symbolic** | `simplify()`, `factor()`, `expand()`, `diff()`, `integrate()`, `solve()` |
-| **Strings** | `"expr"` / `'expr'` — used as arguments for symbolic functions |
+| **Strings** | `"expr"` / `'expr'` — string literals with `+` concatenation |
+| **Introspection** | `typeof()`, `size()`, `help()` |
 | **Multi-statement** | Semicolons separate statements: `a = 1; b = 2; a + b` |
 | **Comments** | Lines starting with `#` are skipped |
+| **Editor** | Syntax highlighting, line numbers, command history (Ctrl+Up/Down) |
 
 ### Built-in Functions
 
@@ -49,6 +54,9 @@ sum  mean  min  max  std  var  len  reshape
 
 # Constants
 pi  e  inf  nan  true  false
+
+# Introspection
+typeof(value)  size(array)  help()
 ```
 
 ### Symbolic Algebra (SymPy)
@@ -74,6 +82,18 @@ vector(3, 4)               # 2D vector from origin
 vector(1, 1, 3, 4)         # 2D vector from (1,1)
 bar([5, 10, 15])           # Bar chart
 hist([1, 2, 2, 3, 3, 3])  # Histogram
+
+# Canvas customisation
+xlabel("Time (s)")
+ylabel("Amplitude")
+title("My Plot")
+grid()                     # Toggle grid
+
+# Overlay mode
+hold(1)                    # Enable overlay
+plot(x, sin(x))
+plot(x, cos(x))           # Both lines visible
+hold(0)                    # Disable overlay
 ```
 
 ---

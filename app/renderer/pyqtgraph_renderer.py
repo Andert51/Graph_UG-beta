@@ -27,16 +27,25 @@ _log = get_logger(__name__)
 class PyQtGraphRenderer(IRenderer):
     """Renders ``PlotCommand`` DTOs onto an existing ``pg.PlotWidget``."""
 
+    # Colour cycle for automatic plot colouring (Catppuccin-inspired)
+    _COLOR_CYCLE: list[str] = [
+        "#89b4fa",  # blue
+        "#f38ba8",  # red
+        "#a6e3a1",  # green
+        "#fab387",  # peach
+        "#cba6f7",  # mauve
+        "#f9e2af",  # yellow
+        "#94e2d5",  # teal
+        "#f5c2e7",  # pink
+        "#74c7ec",  # sapphire
+        "#eba0ac",  # maroon
+    ]
+
     def __init__(self, plot_widget: pg.PlotWidget) -> None:
-        """
-        Parameters
-        ----------
-        plot_widget:
-            The ``pg.PlotWidget`` owned by ``CanvasPanel``.  Injected at
-            construction time — never created internally.
-        """
         self._widget: pg.PlotWidget = plot_widget
         self._items: list[pg.GraphicsObject] = []
+        self._color_index: int = 0
+        self._grid_visible: bool = False
 
     # ------------------------------------------------------------------
     # IRenderer interface
@@ -56,6 +65,8 @@ class PyQtGraphRenderer(IRenderer):
                 self._render_bar(command)
             case PlotKind.HISTOGRAM:
                 self._render_histogram(command)
+            case PlotKind.CANVAS_CMD:
+                self._apply_canvas_cmd(command)
             case _:
                 raise NotImplementedError(
                     f"PyQtGraphRenderer does not yet support: {command.kind}"
@@ -66,10 +77,27 @@ class PyQtGraphRenderer(IRenderer):
         for item in self._items:
             self._widget.removeItem(item)
         self._items.clear()
+        self._color_index = 0
         # Also clear any auto-added legend entries
         legend = self._widget.getPlotItem().legend
         if legend is not None:
             legend.clear()
+
+    # ------------------------------------------------------------------
+    # Colour cycling
+    # ------------------------------------------------------------------
+
+    def _next_color(self) -> str:
+        """Return the next colour in the cycle."""
+        color = self._COLOR_CYCLE[self._color_index % len(self._COLOR_CYCLE)]
+        self._color_index += 1
+        return color
+
+    def _resolve_color(self, cmd: PlotCommand) -> str:
+        """Use the command's color if explicitly set, otherwise auto-cycle."""
+        if cmd.color != "#00bfff":
+            return cmd.color
+        return self._next_color()
 
     # ------------------------------------------------------------------
     # Private render strategies
@@ -79,7 +107,8 @@ class PyQtGraphRenderer(IRenderer):
         """``data`` keys: ``x`` (ndarray), ``y`` (ndarray)."""
         x: np.ndarray = cmd.data["x"]
         y: np.ndarray = cmd.data["y"]
-        pen = pg.mkPen(color=cmd.color, width=cmd.line_width)
+        color = self._resolve_color(cmd)
+        pen = pg.mkPen(color=color, width=cmd.line_width)
         item = self._widget.plot(
             x, y,
             pen=pen,
@@ -91,10 +120,11 @@ class PyQtGraphRenderer(IRenderer):
         """``data`` keys: ``x`` (ndarray), ``y`` (ndarray)."""
         x: np.ndarray = cmd.data["x"]
         y: np.ndarray = cmd.data["y"]
+        color = self._resolve_color(cmd)
         scatter = pg.ScatterPlotItem(
             x=x, y=y,
             pen=pg.mkPen(None),
-            brush=pg.mkBrush(cmd.color),
+            brush=pg.mkBrush(color),
             size=8,
             name=cmd.label or None,
         )
@@ -107,22 +137,23 @@ class PyQtGraphRenderer(IRenderer):
         y0: float = cmd.data.get("y0", 0.0)
         dx: float = cmd.data["dx"]
         dy: float = cmd.data["dy"]
+        color = self._resolve_color(cmd)
 
         # Shaft
         shaft = self._widget.plot(
             [x0, x0 + dx], [y0, y0 + dy],
-            pen=pg.mkPen(cmd.color, width=cmd.line_width),
+            pen=pg.mkPen(color, width=cmd.line_width),
         )
 
         # Arrowhead
         arrow = pg.ArrowItem(
             pos=(x0 + dx, y0 + dy),
-            angle=float(np.degrees(np.arctan2(-dy, -dx))),  # points toward origin
+            angle=float(np.degrees(np.arctan2(-dy, -dx))),
             tipAngle=30,
             headLen=15,
             tailLen=0,
-            pen=pg.mkPen(cmd.color, width=cmd.line_width),
-            brush=pg.mkBrush(cmd.color),
+            pen=pg.mkPen(color, width=cmd.line_width),
+            brush=pg.mkBrush(color),
         )
         self._widget.addItem(arrow)
         self._items.extend([shaft, arrow])
@@ -132,9 +163,10 @@ class PyQtGraphRenderer(IRenderer):
         x: np.ndarray = cmd.data["x"]
         height: np.ndarray = cmd.data["height"]
         width: float = float(cmd.data.get("width", 0.8))
+        color = self._resolve_color(cmd)
         bar = pg.BarGraphItem(
             x=x, height=height, width=width,
-            brush=pg.mkBrush(cmd.color),
+            brush=pg.mkBrush(color),
         )
         self._widget.addItem(bar)
         self._items.append(bar)
@@ -144,12 +176,30 @@ class PyQtGraphRenderer(IRenderer):
         values: np.ndarray = cmd.data["values"]
         bins = cmd.data.get("bins", 20)
         counts, edges = np.histogram(values, bins=bins)
-        # Represent as bar chart with bin centres as x-positions
         centres = (edges[:-1] + edges[1:]) / 2.0
         width = float(edges[1] - edges[0]) * 0.9
+        color = self._resolve_color(cmd)
         bar = pg.BarGraphItem(
             x=centres, height=counts.astype(float), width=width,
-            brush=pg.mkBrush(cmd.color),
+            brush=pg.mkBrush(color),
         )
         self._widget.addItem(bar)
         self._items.append(bar)
+
+    def _apply_canvas_cmd(self, cmd: PlotCommand) -> None:
+        """Handle canvas meta-commands: xlabel, ylabel, title, grid."""
+        action = cmd.data.get("cmd")
+        plot_item = self._widget.getPlotItem()
+        if action == "xlabel":
+            plot_item.setLabel("bottom", cmd.data["text"])
+        elif action == "ylabel":
+            plot_item.setLabel("left", cmd.data["text"])
+        elif action == "title":
+            plot_item.setTitle(cmd.data["text"])
+        elif action == "grid":
+            visible = cmd.data.get("visible")
+            if visible is None:
+                self._grid_visible = not self._grid_visible
+            else:
+                self._grid_visible = visible
+            plot_item.showGrid(x=self._grid_visible, y=self._grid_visible, alpha=0.3)

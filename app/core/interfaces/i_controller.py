@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 
-
-class IController(ABC):
+class IController:
     """Contract for the main application controller.
 
     The controller sits at the intersection of all layers:
@@ -16,9 +14,12 @@ class IController(ABC):
 
     The View and the math/render engines never call each other directly;
     all information flows through this mediator.
+
+    Note: This class intentionally does *not* use ``ABC`` because the
+    concrete ``MainController`` also inherits from ``QObject`` (PySide6),
+    and mixing ``ABCMeta`` with Qt's metaclass causes conflicts.
     """
 
-    @abstractmethod
     def handle_input(self, source: str) -> None:
         """Process user-submitted *source* text end-to-end.
 
@@ -31,7 +32,6 @@ class IController(ABC):
         """
         ...
 
-    @abstractmethod
     def reset_session(self) -> None:
         """Reset all stateful components: evaluator scope, canvas, console."""
         ...
