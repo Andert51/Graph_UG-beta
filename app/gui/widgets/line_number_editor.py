@@ -8,8 +8,10 @@ Catppuccin Mocha palette.
 from __future__ import annotations
 
 from PySide6.QtCore import QRect, QSize, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPaintEvent, QTextBlock
-from PySide6.QtWidgets import QPlainTextEdit, QWidget
+from PySide6.QtGui import QColor, QFont, QKeyEvent, QPainter, QPaintEvent, QTextBlock
+from PySide6.QtWidgets import QCompleter, QPlainTextEdit, QWidget
+
+from app.gui.widgets.completer import update_completions
 
 
 class LineNumberArea(QWidget):
@@ -32,9 +34,31 @@ class LineNumberEditor(QPlainTextEdit):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._line_number_area = LineNumberArea(self)
+        self._completer: QCompleter | None = None
         self.blockCountChanged.connect(self._update_line_area_width)
         self.updateRequest.connect(self._update_line_area)
         self._update_line_area_width()
+
+    # -- Autocomplete integration --
+
+    def set_completer(self, completer: QCompleter) -> None:
+        """Attach an autocomplete completer to this editor."""
+        self._completer = completer
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:  # noqa: N802
+        """Process key events and update autocomplete popup."""
+        if self._completer and self._completer.popup().isVisible():
+            if event.key() in (
+                Qt.Key.Key_Enter, Qt.Key.Key_Return,
+                Qt.Key.Key_Escape, Qt.Key.Key_Tab, Qt.Key.Key_Backtab,
+            ):
+                event.ignore()
+                return
+
+        super().keyPressEvent(event)
+
+        if self._completer is not None:
+            update_completions(self, self._completer)
 
     # -- Gutter width calculation --
 

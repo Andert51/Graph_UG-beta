@@ -112,3 +112,28 @@ class AssignmentNode(ASTNode):
 
     name: str = ""
     value: ASTNode = field(default_factory=ASTNode)
+
+
+@dataclass
+class IndexAccessNode(ASTNode):
+    """Element access: ``expr[index]``."""
+
+    obj: ASTNode = field(default_factory=ASTNode)
+    index: ASTNode = field(default_factory=ASTNode)
+
+
+@dataclass
+class TernaryNode(ASTNode):
+    """Ternary conditional: ``cond ? if_true : if_false``."""
+
+    condition: ASTNode = field(default_factory=ASTNode)
+    if_true: ASTNode = field(default_factory=ASTNode)
+    if_false: ASTNode = field(default_factory=ASTNode)
+
+
+@dataclass
+class PipeNode(ASTNode):
+    """Pipe operator: ``expr |> func``."""
+
+    value: ASTNode = field(default_factory=ASTNode)
+    func_name: str = ""

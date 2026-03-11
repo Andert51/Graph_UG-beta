@@ -39,8 +39,10 @@ from PySide6.QtWidgets import QApplication
 from app.controllers.main_controller import MainController
 from app.gui.main_window import MainWindow
 from app.gui.styles.pyqtgraph_config import configure_pyqtgraph
+from app.gui.styles.theme_manager import ThemeManager, CATPPUCCIN_MOCHA
 from app.parser.evaluator import MathEvaluator
 from app.renderer.pyqtgraph_renderer import PyQtGraphRenderer
+from app.renderer.pyqtgraph_3d_renderer import PyQtGraph3DRenderer
 
 
 def _build_application() -> QApplication:
@@ -48,10 +50,15 @@ def _build_application() -> QApplication:
     configure_pyqtgraph()
     app = QApplication(sys.argv)
     app.setApplicationName("GraphUG")
-    app.setApplicationVersion("0.3.0")
+    app.setApplicationVersion("0.7.0")
     app.setOrganizationName("GraphUG Project")
     # Enable high-DPI scaling
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+    # Set app icon
+    from PySide6.QtGui import QIcon
+    icon_path = _ROOT / "assets" / "App_ico.png"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     return app
 
 
@@ -62,7 +69,12 @@ def _wire_dependencies(window: MainWindow) -> MainController:
     """
     evaluator = MathEvaluator()
     renderer = PyQtGraphRenderer(window.canvas_panel.plot_widget)
-    controller = MainController(evaluator, renderer)
+    renderer_3d = PyQtGraph3DRenderer(window.canvas_panel.gl_widget)
+    controller = MainController(
+        evaluator, renderer,
+        renderer_3d=renderer_3d,
+        canvas_panel=window.canvas_panel,
+    )
 
     # View → Controller
     window.editor_panel.input_submitted.connect(controller.handle_input)

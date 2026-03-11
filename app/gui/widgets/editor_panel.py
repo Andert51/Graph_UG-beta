@@ -1,20 +1,18 @@
-"""EditorPanel — left-side input and output panel.
+"""EditorPanel — script editor with embedded mini-output.
 
 Responsibilities
 ----------------
 * Provide a ``QPlainTextEdit`` code editor with ``Shift+Enter`` shortcut.
-* Provide a ``QTextEdit`` read-only output console with coloured HTML output.
+* Provide a small embedded ``QTextEdit`` output console (also shown in the
+  separate Output dock, but kept here for quick inline feedback).
 * Emit ``input_submitted(str)`` whenever the user requests evaluation.
 * Expose ``append_output`` / ``clear_output`` so the Controller can push
   results back without the panel knowing anything about math.
-
-The panel is intentionally ignorant of how input is evaluated; it only
-emits a raw text signal and waits for the controller to call back.
 """
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QFont, QKeyEvent
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -26,15 +24,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.gui.widgets.completer import attach_completer
 from app.gui.widgets.line_number_editor import LineNumberEditor
 from app.gui.widgets.syntax_highlighter import GraphUGHighlighter
 
 
 class EditorPanel(QWidget):
-    """Composite widget: code editor (top) + toolbar + console output (bottom)."""
+    """Composite widget: code editor (top) + toolbar + mini output (bottom)."""
 
     input_submitted: Signal = Signal(str)
-    """Emitted with the full editor text when the user triggers evaluation."""
 
     _MAX_HISTORY: int = 200
 
@@ -46,21 +44,11 @@ class EditorPanel(QWidget):
         self._build_ui()
 
     # ------------------------------------------------------------------
-    # Public API — consumed by the controller / main window
+    # Public API
     # ------------------------------------------------------------------
 
     def append_output(self, text: str, *, is_error: bool = False) -> None:
-        """Append a coloured line to the output console.
-
-        Parameters
-        ----------
-        text:
-            Plain-text result or error message.
-        is_error:
-            When ``True`` the text is rendered in red; otherwise in green.
-        """
         color = "#f38ba8" if is_error else "#a6e3a1"
-        # HTML-escape the content to prevent accidental tag injection
         safe = (
             text
             .replace("&", "&amp;")
@@ -69,13 +57,24 @@ class EditorPanel(QWidget):
         )
         self._output.append(
             f'<span style="color:{color};'
+            f"white-space:pre;"
             f'font-family:\'Cascadia Code\',\'Fira Code\',monospace;">'
             f"{safe}</span>"
         )
 
     def clear_output(self) -> None:
-        """Clear all content from the output console."""
         self._output.clear()
+
+    def clear_editor(self) -> None:
+        self._editor.clear()
+
+    def set_font_size(self, size: int) -> None:
+        font = self._editor.font()
+        font.setPointSize(size)
+        self._editor.setFont(font)
+        font_out = self._output.font()
+        font_out.setPointSize(size)
+        self._output.setFont(font_out)
 
     # ------------------------------------------------------------------
     # UI construction
@@ -86,64 +85,56 @@ class EditorPanel(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        root.addWidget(self._make_header("  Script Editor"))
-
         mono = self._mono_font()
 
         # ── Code editor ──────────────────────────────────────────────
         self._editor = LineNumberEditor()
         self._editor.setFont(mono)
         self._editor.setPlaceholderText(
-            "# GraphUG mathematical environment\n"
+            "# GraphUG — Interactive Mathematical Environment\n"
             "# Shift+Enter or ▶ Run to evaluate\n\n"
+            "# Quick start:\n"
             "x = linspace(0, 2*pi, 200)\n"
-            "plot(x, sin(x))"
+            'fplot("sin(x)")\n'
+            'surface("sin(x)*cos(y)")\n'
+            "help()"
         )
         self._editor.installEventFilter(self)
         self._highlighter = GraphUGHighlighter(self._editor.document())
-        root.addWidget(self._editor, stretch=6)
+        self._completer = attach_completer(self._editor)
+        self._editor.set_completer(self._completer)
+        root.addWidget(self._editor, stretch=7)
 
-        # ── Run / Clear toolbar ───────────────────────────────────────
+        # ── Run toolbar ───────────────────────────────────────────────
         root.addWidget(self._make_toolbar())
 
-        # ── Console output ────────────────────────────────────────────
-        root.addWidget(self._make_header("  Output"))
+        # ── Inline mini output ────────────────────────────────────────
         self._output = QTextEdit()
         self._output.setReadOnly(True)
         self._output.setFont(mono)
-        self._output.document().setMaximumBlockCount(2000)
-        root.addWidget(self._output, stretch=3)
-
-    def _make_header(self, title: str) -> QLabel:
-        lbl = QLabel(title)
-        lbl.setFixedHeight(26)
-        lbl.setStyleSheet(
-            "background:#181825; color:#a6adc8; font-size:10px;"
-            "border-bottom:1px solid #313244; letter-spacing:1.2px;"
-            "text-transform:uppercase; padding-left:4px;"
-        )
-        return lbl
+        self._output.setMaximumHeight(120)
+        self._output.document().setMaximumBlockCount(500)
+        self._output.setPlaceholderText("Output appears here…")
+        root.addWidget(self._output, stretch=2)
 
     def _make_toolbar(self) -> QWidget:
         bar = QWidget()
-        bar.setFixedHeight(38)
-        bar.setStyleSheet("background:#181825; border-top:1px solid #313244;")
+        bar.setFixedHeight(32)
         layout = QHBoxLayout(bar)
-        layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(6)
+        layout.setContentsMargins(6, 2, 6, 2)
+        layout.setSpacing(4)
 
         run_btn = QPushButton("▶  Run")
         run_btn.setToolTip("Evaluate (Shift+Enter)")
+        run_btn.setFixedHeight(24)
         run_btn.clicked.connect(self._submit)
         layout.addWidget(run_btn)
 
-        clear_editor_btn = QPushButton("✕  Clear Editor")
-        clear_editor_btn.clicked.connect(self._editor.clear)
-        layout.addWidget(clear_editor_btn)
-
-        clear_out_btn = QPushButton("✕  Clear Output")
-        clear_out_btn.clicked.connect(self.clear_output)
-        layout.addWidget(clear_out_btn)
+        clear_btn = QPushButton("✕  Clear")
+        clear_btn.setToolTip("Clear the editor")
+        clear_btn.setFixedHeight(24)
+        clear_btn.clicked.connect(self._editor.clear)
+        layout.addWidget(clear_btn)
 
         layout.addStretch()
         return bar
@@ -159,7 +150,11 @@ class EditorPanel(QWidget):
     # ------------------------------------------------------------------
 
     def eventFilter(self, watched: object, event: object) -> bool:  # type: ignore[override]
-        if watched is self._editor and isinstance(event, QKeyEvent):
+        if (
+            watched is self._editor
+            and isinstance(event, QKeyEvent)
+            and event.type() == QEvent.Type.KeyPress
+        ):
             mods = event.modifiers()
             key = event.key()
 

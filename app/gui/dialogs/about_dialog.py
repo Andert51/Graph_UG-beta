@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 
-_VERSION = "0.3.0"
+_VERSION = "0.7.0"
 
 _ABOUT_HTML = f"""\
 <h2 style="margin-bottom: 4px;">GraphUG</h2>
@@ -23,7 +23,7 @@ _ABOUT_HTML = f"""\
 <hr/>
 <p>
   <b>Architecture:</b> MVC / Clean Architecture<br/>
-  <b>Stack:</b> PySide6 · PyQtGraph · NumPy · SymPy · Lark<br/>
+  <b>Stack:</b> PySide6 · PyQtGraph · PyOpenGL · NumPy · SymPy · Lark<br/>
   <b>License:</b> MIT
 </p>
 <p style="color: #a6adc8; font-size: 11px;">

@@ -47,21 +47,52 @@ class GraphUGHighlighter(QSyntaxHighlighter):
 
         # Built-in constants
         self._rules.append((
-            re.compile(r"\b(pi|e|inf|nan|true|false)\b"),
+            re.compile(r"\b(pi|e|inf|nan|true|false|phi|tau|euler_gamma)\b"),
             _fmt("#f9e2af"),
         ))
 
         # Built-in functions
         builtins = (
             r"\b(sin|cos|tan|asin|acos|atan|atan2|sinh|cosh|tanh|"
-            r"sqrt|exp|log|log2|log10|abs|ceil|floor|round|"
-            r"linspace|arange|zeros|ones|eye|"
-            r"dot|cross|norm|det|inv|transpose|"
+            r"asinh|acosh|atanh|sec|csc|cot|sinc|deg2rad|rad2deg|"
+            r"sqrt|cbrt|exp|exp2|expm1|log|log2|log10|log1p|abs|ceil|floor|round|"
+            r"sign|clip|mod|gcd|lcm|factorial|comb|perm|hypot|"
+            r"linspace|arange|logspace|zeros|ones|eye|diag|full|"
+            r"rand|randn|randint|meshgrid|flatten|sort|unique|reverse|"
+            r"concat|stack|tile|repeat|"
+            r"dot|cross|norm|det|inv|transpose|trace|rank|"
+            r"eig|eigvals|svd|pinv|solve_linear|lu|qr|cholesky|"
+            r"cond|outer|inner|kron|matmul|"
             r"sum|mean|min|max|std|var|len|reshape|"
-            r"typeof|size|"
+            r"median|percentile|cumsum|cumprod|prod|argmin|argmax|"
+            r"histogram|corrcoef|cov|"
+            r"typeof|size|ndim|isnan|isinf|"
+            r"where|interp|gradient|diff_array|trapz|"
+            r"polyfit|polyval|roots|convolve|fft|ifft|fftfreq|"
+            r"magnitude|normalize|angle|proj|reject|"
             r"simplify|factor|expand|diff|integrate|solve|"
+            r"limit|series|partial|taylor|defint|"
+            r"summation|product|nsolve|"
+            r"gradient|divergence|curl|laplacian|"
+            r"laplace|invlaplace|"
+            r"rref|nullspace|colspace|"
             r"plot|scatter|vector|bar|hist|"
-            r"xlabel|ylabel|title|grid|hold)\b"
+            r"fplot|polar|parametric|parametric3d|"
+            r"surface|wireframe|"
+            r"plotderiv|plotintegral|tangentline|"
+            r"implicit|contour|slopefield|"
+            r"heatmap|vectorfield|stem|step|pie|errorbar|"
+            r"scatter3d|surfparam|bar3d|"
+            r"logplot|semilogx|semilogy|area|"
+            r"complex|real|imag|conj|phase|"
+            r"vander|toeplitz|hilbert|companion|triu|tril|block_diag|"
+            r"fftshift|rfft|fft2|hamming|hanning|blackman|kaiser|"
+            r"union|intersect|setdiff|in1d|"
+            r"cummax|cummin|movmean|"
+            r"bitand|bitor|bitxor|bitnot|shl|shr|"
+            r"map_arr|linreg|spline_interp|"
+            r"gpuinfo|"
+            r"xlabel|ylabel|title|grid|hold|help)\b"
         )
         self._rules.append((re.compile(builtins), _fmt("#89b4fa")))
 
@@ -69,7 +100,7 @@ class GraphUGHighlighter(QSyntaxHighlighter):
         self._rules.append((re.compile(r"(?<!=)=(?!=)"), _fmt("#f5c2e7", bold=True)))
 
         # Operators
-        self._rules.append((re.compile(r"[+\-*/%^]|==|!=|<=|>=|<|>"), _fmt("#89dceb")))
+        self._rules.append((re.compile(r"[+\-*/%^]|==|!=|<=|>=|<|>|\|>|\?|:"), _fmt("#89dceb")))
 
         # Brackets
         self._rules.append((re.compile(r"[(){}\[\]]"), _fmt("#f5e0dc")))

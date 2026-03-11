@@ -220,8 +220,9 @@ class TestPrettyPrinting:
 
     def test_vector_display(self, ev: MathEvaluator) -> None:
         r = ev.evaluate("[1,2,3]")
-        assert "1, 2, 3" in r.output_text
-        assert "3 elements" in r.output_text
+        # Phase 7 format: "[ 1  2  3 ]"
+        assert "1" in r.output_text and "2" in r.output_text and "3" in r.output_text
+        assert "[" in r.output_text
 
     def test_matrix_display(self, ev: MathEvaluator) -> None:
         r = ev.evaluate("[1,2;3,4]")

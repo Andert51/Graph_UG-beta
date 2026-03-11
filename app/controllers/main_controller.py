@@ -10,6 +10,7 @@ Signal topology
       ├─► IEvaluator.evaluate(source) ──► MathResult
       │       │
       │       ├─ MathResult.plot_commands ──► IRenderer.render(cmd) × N
+      │       │   (2-D commands → _renderer, 3-D commands → _renderer_3d)
       │       │
       │       └─ MathResult.output_text / .error
       │
@@ -23,6 +24,8 @@ the MRO.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import QObject, Signal, Slot
 
 from app.core.interfaces.i_controller import IController
@@ -32,27 +35,44 @@ from app.core.models.math_result import MathResult
 from app.core.models.plot_command import PlotKind
 from app.utils.logger import get_logger
 
+if TYPE_CHECKING:
+    from app.gui.widgets.canvas_panel import CanvasPanel
+
 _log = get_logger(__name__)
+
+# PlotKinds that require the 3-D renderer
+_3D_KINDS: frozenset[PlotKind] = frozenset({
+    PlotKind.SURFACE_3D,
+    PlotKind.WIREFRAME_3D,
+    PlotKind.PARAMETRIC_3D,
+    PlotKind.SCATTER_3D,
+    PlotKind.SURFACE_PARAM_3D,
+    PlotKind.BAR_3D,
+})
 
 
 class MainController(QObject, IController):
     """Mediates the full evaluation pipeline via PySide6 signals."""
 
     result_ready: Signal = Signal(str)
-    """Emitted with a human-readable result string on successful evaluation."""
-
     error_occurred: Signal = Signal(str)
-    """Emitted with an error detail string when evaluation or rendering fails."""
+
+    canvas_mode_requested: Signal = Signal(str)
+    """Emitted with ``"2d"`` or ``"3d"`` to auto-switch the canvas view."""
 
     def __init__(
         self,
         evaluator: IEvaluator,
         renderer: IRenderer,
+        renderer_3d: IRenderer | None = None,
+        canvas_panel: "CanvasPanel | None" = None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._evaluator: IEvaluator = evaluator
         self._renderer: IRenderer = renderer
+        self._renderer_3d: IRenderer | None = renderer_3d
+        self._canvas_panel: "CanvasPanel | None" = canvas_panel
 
     # ------------------------------------------------------------------
     # IController interface
@@ -60,11 +80,6 @@ class MainController(QObject, IController):
 
     @Slot(str)
     def handle_input(self, source: str) -> None:
-        """Entry point wired to ``EditorPanel.input_submitted``.
-
-        Performs: parse → evaluate → render (if applicable) → emit result.
-        On any failure the error is forwarded to the View without crashing.
-        """
         _log.debug("handle_input: %d chars", len(source))
         result: MathResult = self._evaluator.evaluate(source)
 
@@ -73,17 +88,34 @@ class MainController(QObject, IController):
             self.error_occurred.emit(result.error)  # type: ignore[arg-type]
             return
 
-        # Auto-clear canvas before rendering new plots (unless hold mode)
-        has_visual_plots = any(
-            cmd.kind not in (PlotKind.CANVAS_CMD,)
+        has_visual_2d = any(
+            cmd.kind not in (PlotKind.CANVAS_CMD,) and cmd.kind not in _3D_KINDS
             for cmd in result.plot_commands
         )
-        if has_visual_plots and not self._evaluator.hold_mode:
-            self._renderer.clear()
+        has_3d = any(cmd.kind in _3D_KINDS for cmd in result.plot_commands)
+
+        # Auto-clear before new plots (unless hold mode)
+        if (has_visual_2d or has_3d) and not self._evaluator.hold_mode:
+            if has_visual_2d:
+                self._renderer.clear()
+            if has_3d and self._renderer_3d:
+                self._renderer_3d.clear()
+
+        # Auto-switch canvas mode
+        if has_3d and self._canvas_panel:
+            self._canvas_panel.set_mode("3d")
+        elif has_visual_2d and self._canvas_panel:
+            self._canvas_panel.set_mode("2d")
 
         for cmd in result.plot_commands:
             try:
-                self._renderer.render(cmd)
+                if cmd.kind in _3D_KINDS:
+                    if self._renderer_3d is None:
+                        self.error_occurred.emit("RenderError: 3-D renderer not available")
+                        return
+                    self._renderer_3d.render(cmd)
+                else:
+                    self._renderer.render(cmd)
             except NotImplementedError as exc:
                 self.error_occurred.emit(f"RenderError: {exc}")
                 return
@@ -94,11 +126,14 @@ class MainController(QObject, IController):
         self.result_ready.emit(result.output_text or "✓")
 
     def reset_session(self) -> None:
-        """Reset evaluator scope and clear the canvas."""
         self._evaluator.reset_state()
         self._renderer.clear()
+        if self._renderer_3d:
+            self._renderer_3d.clear()
         self.result_ready.emit("Session reset.")
 
     def clear_canvas(self) -> None:
         """Clear only the canvas (renderer items), not the evaluator scope."""
         self._renderer.clear()
+        if self._renderer_3d:
+            self._renderer_3d.clear()
