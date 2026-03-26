@@ -23,8 +23,13 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# Handle PyInstaller bundled resources
+if getattr(sys, 'frozen', False):
+    _ROOT = Path(sys._MEIPASS)  # type: ignore
+else:
+    _ROOT = Path(__file__).resolve().parent
+
 # Ensure the project root is importable when run as ``python main.py``
-_ROOT = Path(__file__).resolve().parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
@@ -56,7 +61,7 @@ def _build_application() -> QApplication:
     app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
     # Set app icon
     from PySide6.QtGui import QIcon
-    icon_path = _ROOT / "assets" / "App_ico.png"
+    icon_path = _ROOT / "assets" / "App_ico.ico"
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
     return app

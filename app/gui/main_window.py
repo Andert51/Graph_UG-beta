@@ -58,7 +58,7 @@ from app.gui.widgets.editor_panel import EditorPanel
 from app.gui.widgets.output_panel import OutputPanel
 
 # Application icon path
-_ICON_PATH = Path(__file__).resolve().parents[2] / "assets" / "App_ico.png"
+_ICON_PATH = Path(__file__).resolve().parents[2] / "assets" / "App_ico.ico"
 
 
 class MainWindow(QMainWindow):
