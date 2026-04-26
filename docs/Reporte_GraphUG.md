@@ -1,21 +1,23 @@
-# GraphUG: Entorno Matemático Interactivo y Calculadora Gráfica — 
-
-## Reporte Técnico Final del Proyecto de Software
-
 ---
-
-## Resumen
-
-El presente documento describe el diseño, desarrollo y fundamentos matemáticos de **GraphUG**, una aplicación de escritorio de código abierto que funge como entorno matemático interactivo y calculadora gráfica, concebida como una alternativa moderna y simplificada a MATLAB. GraphUG integra un analizador sintáctico LALR(1) construido con Lark, un evaluador de expresiones basado en NumPy, un motor de álgebra simbólica sustentado en SymPy, y un sistema de renderizado dual 2-D/3-D implementado con PyQtGraph y OpenGL. La arquitectura del sistema sigue estrictamente el patrón Modelo-Vista-Controlador (MVC) con inyección de dependencias explícita, garantizando separación de responsabilidades y extensibilidad. El proyecto abarca más de 130 funciones numéricas integradas, soporte para cálculo vectorial simbólico, transformadas de Laplace, y más de 20 primitivas de graficación que incluyen superficies 3-D, curvas paramétricas, campos vectoriales y mapas de calor. Se documentan exhaustivamente los fundamentos de geometría analítica, análisis numérico y teoría de lenguajes formales que sustentan cada componente del sistema.
+title: "GRAPHUG: ENTORNO MATEMÁTICO INTERACTIVO Y CALCULADORA GRÁFICA"
+author: Andrés Torres Ceja
+degree: Lic. Ingeniería en Sistemas Computacionales
+course: Ciencias de la Computación “Soft Computing CI”
+university: Universidad de Guanajuato - DICIS
+date: A sábado 25 de abril de 2026
+location: Salamanca, Guanajuato, México
+email: a.torresceja@ugto.mx
+header-left: LIC. INGENIERÍA EN SISTEMAS COMPUTACIONALES
+---
+**Resumen (Abstract) —** El presente documento describe el diseño, desarrollo y fundamentos matemáticos de **GraphUG**, una aplicación de escritorio de código abierto que funge como entorno matemático interactivo y calculadora gráfica, concebida como una alternativa moderna y simplificada a MATLAB. GraphUG integra un analizador sintáctico LALR(1) construido con Lark, un evaluador de expresiones basado en NumPy, un motor de álgebra simbólica sustentado en SymPy, y un sistema de renderizado dual 2-D/3-D implementado con PyQtGraph y OpenGL. La arquitectura del sistema sigue estrictamente el patrón Modelo-Vista-Controlador (MVC) con inyección de dependencias explícita, garantizando separación de responsabilidades y extensibilidad. El proyecto abarca más de 130 funciones numéricas integradas, soporte para cálculo vectorial simbólico, transformadas de Laplace, y más de 20 primitivas de graficación que incluyen superficies 3-D, curvas paramétricas, campos vectoriales y mapas de calor. Se documentan exhaustivamente los fundamentos de geometría analítica, análisis numérico y teoría de lenguajes formales que sustentan cada componente del sistema.
 
 **Palabras clave:** Entorno matemático interactivo, LALR(1), graficación computacional, geometría analítica, álgebra simbólica, Python, NumPy, SymPy, PyQtGraph, MVC.
 
 ---
 
-## I. Introducción
+# Introducción
 
-### I.A Contexto y Motivación
-
+## Contexto y Motivación
 Los entornos matemáticos interactivos como MATLAB, Mathematica y Octave constituyen herramientas fundamentales en ciencias de la computación, ingeniería y matemáticas aplicadas. Sin embargo, estas herramientas suelen ser propietarias, costosas o de difícil extensión. GraphUG surge como una alternativa de código abierto que combina evaluación numérica de alto rendimiento, álgebra simbólica y graficación avanzada en una interfaz moderna y accesible.
 
 El objetivo principal de GraphUG es proporcionar un entorno donde el usuario pueda:
@@ -26,8 +28,7 @@ El objetivo principal de GraphUG es proporcionar un entorno donde el usuario pue
 4. Graficar funciones en 2-D y 3-D con primitivas variadas.
 5. Ejecutar operaciones de cálculo vectorial (gradiente, divergencia, rotacional, laplaciano).
 
-### I.B Contribuciones del Proyecto
-
+## Contribuciones del Proyecto
 Las contribuciones principales de este trabajo son:
 
 - **Diseño de un lenguaje matemático completo** con gramática LALR(1) que soporta aritmética, comparaciones, operadores lógicos, asignación de variables, vectores, matrices, funciones, operador ternario y operador pipe.
@@ -36,31 +37,29 @@ Las contribuciones principales de este trabajo son:
 - **Sistema de renderizado dual** con soporte para más de 20 primitivas de graficación en 2-D y 3-D.
 - **Aceleración GPU transparente** mediante CuPy para operaciones de álgebra lineal en arreglos grandes.
 
-### I.C Estructura del Documento
-
+## Estructura del Documento
 La Parte I cubre la arquitectura del software, la gramática formal del lenguaje, el proceso de análisis sintáctico y el motor de evaluación. La Parte II aborda los fundamentos matemáticos de la graficación, el álgebra simbólica, el cálculo vectorial y el sistema de renderizado.
 
 ---
 
-## II. Materiales y Métodos
+# Materiales y Métodos
 
-### II.A Pila Tecnológica y Dependencias
-
+## Pila Tecnológica y Dependencias
 El sistema se implementa en **Python 3.12+** y emplea las siguientes dependencias:
 
-| Dependencia | Versión | Rol en el Sistema |
-|---|---|---|
-| **PySide6** $\geq 6.6.0$ | Framework Qt6 | Interfaz gráfica de usuario (GUI) |
-| **PyQtGraph** $\geq 0.13.3$ | Graficación 2-D/3-D | Renderizado de alto rendimiento |
-| **PyOpenGL** $\geq 3.1.6$ | Bindings OpenGL | Soporte 3-D (superficies, wireframes) |
-| **NumPy** $\geq 1.26.0$ | Computación numérica | Operaciones vectorizadas y álgebra lineal |
-| **SymPy** $\geq 1.12$ | Álgebra simbólica | Diferenciación, integración, simplificación |
-| **Lark** $\geq 1.1.9$ | Generador de parsers | Análisis sintáctico LALR(1) |
-| **pytest** $\geq 7.4$ | Framework de pruebas | 126+ pruebas unitarias |
+| Dependencia                 | Versión              | Rol en el Sistema                           |
+| --------------------------- | -------------------- | ------------------------------------------- |
+| **PySide6** $\geq 6.6.0$    | Framework Qt6        | Interfaz gráfica de usuario (GUI)           |
+| **PyQtGraph** $\geq 0.13.3$ | Graficación 2-D/3-D  | Renderizado de alto rendimiento             |
+| **PyOpenGL** $\geq 3.1.6$   | Bindings OpenGL      | Soporte 3-D (superficies, wireframes)       |
+| **NumPy** $\geq 1.26.0$     | Computación numérica | Operaciones vectorizadas y álgebra lineal   |
+| **SymPy** $\geq 1.12$       | Álgebra simbólica    | Diferenciación, integración, simplificación |
+| **Lark** $\geq 1.1.9$       | Generador de parsers | Análisis sintáctico LALR(1)                 |
+| **pytest** $\geq 7.4$       | Framework de pruebas | 126+ pruebas unitarias                      |
 
-### II.B Arquitectura del Software
+## Arquitectura del Software
 
-#### II.B.1 Patrón Modelo-Vista-Controlador (MVC)
+### Patrón Modelo-Vista-Controlador (MVC)
 
 GraphUG implementa una arquitectura **MVC estricta con Clean Architecture** y principios SOLID. La separación se logra mediante:
 
@@ -73,8 +72,7 @@ El flujo de datos se describe formalmente como:
 
 $$\text{EditorPanel} \xrightarrow{\text{input\_submitted(str)}} \text{MainController} \xrightarrow{\text{evaluate()}} \text{MathEvaluator} \xrightarrow{\text{MathResult}} \text{Renderer} \xrightarrow{\text{render()}} \text{Canvas}$$
 
-#### II.B.2 Inyección de Dependencias
-
+### Inyección de Dependencias
 El punto de entrada (`main.py`) realiza el cableado explícito del grafo de objetos:
 
 ```python
@@ -86,7 +84,7 @@ controller = MainController(evaluator, renderer, renderer_3d=renderer_3d)
 
 No se utilizan singletons, localizadores de servicios ni estado global. Cada objeto recibe sus dependencias a través de su constructor.
 
-#### II.B.3 Interfaces Abstractas
+### Interfaces Abstractas
 
 La interfaz `IEvaluator` define el contrato:
 
@@ -106,9 +104,9 @@ donde `PlotCommand` encapsula el tipo de primitiva (`PlotKind`), los datos numé
 
 $$\text{PlotCommand} = \langle \text{kind}: \text{PlotKind}, \text{data}: \text{dict}, \text{label}: \text{str}, \text{color}: \text{str}, \text{line\_width}: \text{float} \rangle$$
 
-### II.C Gramática Formal del Lenguaje
+## Gramática Formal del Lenguaje
 
-#### II.C.1 Definición EBNF
+### Definición EBNF
 
 El lenguaje GraphUG se define mediante una gramática libre de contexto procesada por un parser LALR(1). La jerarquía de precedencia de operadores (de menor a mayor) es:
 
@@ -137,7 +135,7 @@ atom_base   → NUMBER | STRING | NAME '(' arglist ')' | NAME | '[' bracket_body
 bracket_body → row ';' row (';' row)*  |  arglist
 ```
 
-#### II.C.2 Análisis LALR(1) con Lark
+### Análisis LALR(1) con Lark
 
 El parser LALR(1) (*Look-Ahead Left-to-right Rightmost derivation*) procesa la gramática en tiempo lineal $O(n)$ con respecto a la longitud de la entrada. La clase de gramáticas LALR(1) es un subconjunto de las gramáticas LR(1) que utiliza tablas de análisis más compactas.
 
@@ -153,7 +151,7 @@ Lark implementa una optimización clave: el `Transformer` se ejecuta **inline** 
 
 $$\text{Texto} \xrightarrow[\text{LALR(1)}]{\text{Lark}} \text{Parse Tree} \xrightarrow[\text{inline}]{\text{\_MathTransformer}} \text{AST tipado}$$
 
-#### II.C.3 Árbol de Sintaxis Abstracta (AST)
+### Árbol de Sintaxis Abstracta (AST)
 
 Los nodos del AST se definen como `dataclass` inmutables con metadatos de ubicación:
 
@@ -172,9 +170,9 @@ Los nodos del AST se definen como `dataclass` inmutables con metadatos de ubicac
 | `TernaryNode` | `condition, if\_true, if\_false` | Condicional ternario |
 | `PipeNode` | `value, func\_name` | Operador pipe $\text{expr} \mid\!> \text{func}$ |
 
-### II.D Motor de Evaluación
+## Motor de Evaluación
 
-#### II.D.1 Despacho por Pattern Matching Estructural
+### Despacho por Pattern Matching Estructural
 
 El evaluador utiliza *structural pattern matching* de Python 3.10 para despachar la evaluación según el tipo concreto de nodo AST:
 
@@ -182,7 +180,7 @@ $$\texttt{\_eval\_node}(n) = \begin{cases} n.\text{value} & \text{si } n \in \te
 
 donde $\oplus$ representa el operador binario correspondiente.
 
-#### II.D.2 Ámbito de Variables y Estado de Sesión
+### Ámbito de Variables y Estado de Sesión
 
 El evaluador mantiene un diccionario de ámbito `_scope` que persiste a lo largo de una sesión:
 
@@ -190,7 +188,7 @@ $$\text{scope} = \text{BUILTINS} \cup \text{USER\_VARS}$$
 
 Los nombres integrados (*built-ins*) están protegidos contra reasignación. El método `reset_state()` restaura el ámbito a su estado inicial.
 
-#### II.D.3 Funciones Integradas
+### Funciones Integradas
 
 GraphUG provee **más de 130 funciones integradas** organizadas en categorías:
 
@@ -208,7 +206,7 @@ $$x_k = a + k \cdot \frac{b - a}{n - 1}, \quad k = 0, 1, \ldots, n-1$$
 
 **Estadística:** Media, varianza, desviación estándar, mediana, percentiles, covarianza, correlación.
 
-#### II.D.4 Procesamiento Multi-sentencia
+### Procesamiento Multi-sentencia
 
 El evaluador procesa múltiples sentencias separadas por punto y coma, respetando la sintaxis matricial donde el punto y coma separa filas:
 
@@ -219,7 +217,7 @@ _split_statements("a = 1; b = [1,2; 3,4]; a + det(b)")
 
 El algoritmo mantiene un contador de profundidad de corchetes para distinguir separadores de sentencias de separadores de filas matriciales.
 
-### II.E Jerarquía de Excepciones
+## Jerarquía de Excepciones
 
 GraphUG define una jerarquía de excepciones con sugerencias inteligentes:
 
@@ -233,7 +231,7 @@ GraphUGError (base)
 
 La clase `UndefinedSymbolError` utiliza `difflib.get_close_matches()` con umbral de similitud 0.6 para sugerir correcciones.
 
-### II.F Sistema de Pruebas
+## Sistema de Pruebas
 
 El proyecto incluye **126+ pruebas unitarias** organizadas en 6 fases que cubren:
 
@@ -248,11 +246,11 @@ Las pruebas se ejecutan con `pytest` con cobertura de código (`pytest-cov`).
 
 ---
 
-## III. Resultados — Arquitectura de Componentes
+# Resultados — Arquitectura de Componentes
 
-### III.A Estructura del Proyecto
+## Estructura del Proyecto
 
-```
+```python
 GraphUG/
 ├── main.py                    # Punto de entrada — cableado DI
 ├── app/
@@ -283,7 +281,7 @@ GraphUG/
 └── requirements.txt           # Dependencias de ejecución
 ```
 
-### III.B Señales y Slots — Topología de Comunicación
+## Señales y Slots — Topología de Comunicación
 
 El sistema utiliza el mecanismo de **señales y slots** de Qt para comunicación desacoplada:
 
@@ -296,7 +294,7 @@ El sistema utiliza el mecanismo de **señales y slots** de Qt para comunicación
 | `canvas_clear_requested` | `MainWindow` | `MainController.clear_canvas` | — |
 | `mode_changed` | `CanvasPanel` | — | `str` ("2d"/"3d") |
 
-### III.C Motor de Álgebra Simbólica
+## Motor de Álgebra Simbólica
 
 El módulo `symbolic.py` actúa como fachada sobre SymPy, implementando carga perezosa (*lazy loading*) para evitar penalizar el tiempo de inicio:
 
@@ -319,7 +317,7 @@ El módulo `symbolic.py` actúa como fachada sobre SymPy, implementando carga pe
 | `laplace("expr", "t", "s")` | $\mathcal{L}\{f(t)\}(s)$ |
 | `invlaplace("expr", "s", "t")` | $\mathcal{L}^{-1}\{F(s)\}(t)$ |
 
-### III.D Aceleración GPU
+## Aceleración GPU
 
 El módulo `gpu_backend.py` implementa aceleración transparente mediante CuPy:
 
@@ -329,11 +327,11 @@ Las operaciones aceleradas incluyen: FFT, multiplicación matricial, determinant
 
 ---
 
-## IV. Resultados — Fundamentos Matemáticos de la Graficación
+# Resultados — Fundamentos Matemáticos de la Graficación
 
-### IV.A Graficación 2-D: Primitivas y Geometría Analítica
+## Graficación 2-D: Primitivas y Geometría Analítica
 
-#### IV.A.1 Graficación de Líneas (`plot`)
+### Graficación de Líneas (`plot`)
 
 La primitiva fundamental es la **curva de línea 2-D**. Dada una función $f: \mathbb{R} \rightarrow \mathbb{R}$, la graficación consiste en:
 
@@ -347,11 +345,11 @@ $$x_k = a + k \cdot h, \quad h = \frac{b - a}{n - 1}$$
 
 La función `plot(x, y)` acepta arreglos NumPy y genera un `PlotCommand` con `kind=PlotKind.LINE_2D` y `data={"x": x, "y": y}`.
 
-#### IV.A.2 Graficación de Dispersión (`scatter`)
+### Graficación de Dispersión (`scatter`)
 
 El gráfico de dispersión representa un conjunto de puntos discretos $\{(x_i, y_i)\}_{i=1}^{n}$ sin interpolación. Se implementa mediante `pg.ScatterPlotItem` con marcadores circulares de 8 píxeles.
 
-#### IV.A.3 Graficación de Vectores (`vector`)
+### Graficación de Vectores (`vector`)
 
 Un vector 2-D se representa geométricamente como una flecha desde un punto de origen $(x_0, y_0)$ hasta $(x_0 + d_x, y_0 + d_y)$. El renderizado se compone de:
 
@@ -362,13 +360,13 @@ $$\theta = \arctan2(-d_y, -d_x) \cdot \frac{180}{\pi}$$
 
 La función $\arctan2(y, x)$ proporciona el ángulo en el rango $(-\pi, \pi]$ respetando el cuadrante correcto, a diferencia de $\arctan(y/x)$ que es ambigua.
 
-#### IV.A.4 Diagramas de Barras (`bar`)
+### Diagramas de Barras (`bar`)
 
 Cada barra se posiciona en $x_i$ con altura $h_i$ y ancho $w$ (por defecto $w = 0.8$). Se utiliza `pg.BarGraphItem` que renderiza rectángulos:
 
 $$\text{Barra}_i = \{(x, y) : x_i - w/2 \leq x \leq x_i + w/2, \; 0 \leq y \leq h_i\}$$
 
-#### IV.A.5 Histogramas (`hist`)
+### Histogramas (`hist`)
 
 El histograma divide los datos en $B$ bins (por defecto $B = 20$) y cuenta las frecuencias. Dado un conjunto de datos $\{d_j\}_{j=1}^{N}$:
 
@@ -377,7 +375,7 @@ El histograma divide los datos en $B$ bins (por defecto $B = 20$) y cuenta las f
 3. Los centros de bins se calculan como: $\bar{e}_i = \frac{e_{i-1} + e_i}{2}$.
 4. Se renderiza como un diagrama de barras con ancho $w = 0.9 \cdot (e_1 - e_0)$.
 
-#### IV.A.6 Relleno entre Curvas (`fill_between`)
+### Relleno entre Curvas (`fill_between`)
 
 Utilizado para visualizar integrales definidas. Dadas dos curvas $y_1(x)$ e $y_2(x)$, se sombrea la región:
 
@@ -385,7 +383,7 @@ $$\mathcal{R} = \{(x, y) : a \leq x \leq b, \; \min(y_1(x), y_2(x)) \leq y \leq 
 
 Se implementa mediante `pg.FillBetweenItem` con transparencia alpha de $0.25$ (sufijo hexadecimal `40`).
 
-#### IV.A.7 Curvas Implícitas (`implicit`)
+### Curvas Implícitas (`implicit`)
 
 Una curva implícita se define como el conjunto de nivel cero de una función de dos variables:
 
@@ -403,7 +401,7 @@ $$s_x = \frac{x_1 - x_0}{n_{\text{cols}}}, \quad s_y = \frac{y_1 - y_0}{n_{\text
 
 aplicada como una transformación afín `QTransform().scale(sx, sy)`.
 
-#### IV.A.8 Curvas de Contorno (`contour`)
+### Curvas de Contorno (`contour`)
 
 Las curvas de contorno generalizan las curvas implícitas a múltiples niveles:
 
@@ -413,7 +411,7 @@ donde los niveles $\ell_k$ se distribuyen uniformemente en $[\min(Z), \max(Z)]$ 
 
 $$\ell_k = Z_{\min} + k \cdot \frac{Z_{\max} - Z_{\min}}{K + 1}, \quad k = 1, \ldots, K$$
 
-#### IV.A.9 Campos de Pendientes (`slopefield`)
+### Campos de Pendientes (`slopefield`)
 
 Un campo de pendientes visualiza la ecuación diferencial ordinaria $\frac{dy}{dx} = f(x, y)$. En cada punto $(x_i, y_j)$ de una rejilla de $20 \times 20$ se dibuja un segmento de línea con pendiente $f(x_i, y_j)$.
 
@@ -424,7 +422,7 @@ El proceso de normalización es:
 3. Normalizar y escalar: $\text{scale} = \frac{\min(\Delta x, \Delta y)}{n_{\text{grid}} \cdot 2.5}$.
 4. El segmento en $(x_i, y_j)$ va de $(x_i - \tilde{dx}, y_j - \tilde{dy})$ a $(x_i + \tilde{dx}, y_j + \tilde{dy})$ donde $\tilde{dx} = \frac{DX_{ij}}{M_{ij}} \cdot \text{scale}$.
 
-#### IV.A.10 Campos Vectoriales 2-D (`vectorfield`)
+### Campos Vectoriales 2-D (`vectorfield`)
 
 Un campo vectorial $\mathbf{F}(x, y) = (u(x,y), v(x,y))$ se visualiza como una colección de flechas. El proceso es análogo al campo de pendientes, pero con componentes independientes $u$ y $v$:
 
@@ -434,13 +432,13 @@ Las flechas se normalizan para mantener longitud visual uniforme, preservando la
 
 $$\hat{u}_{ij} = \frac{u_{ij}}{M_{ij}} \cdot \text{scale}, \quad \hat{v}_{ij} = \frac{v_{ij}}{M_{ij}} \cdot \text{scale}$$
 
-#### IV.A.11 Mapas de Calor (`heatmap`)
+### Mapas de Calor (`heatmap`)
 
 Un mapa de calor visualiza una función escalar $f(x, y)$ mediante una imagen coloreada. Se utiliza `pg.ImageItem` con la tabla de colores *viridis* de Matplotlib (256 niveles):
 
 $$\text{color}(x, y) = \text{viridis}\left(\frac{f(x,y) - f_{\min}}{f_{\max} - f_{\min}}\right)$$
 
-### IV.B Coordenadas Polares (`polar`)
+## Coordenadas Polares (`polar`)
 
 La graficación polar transforma una función $r(\theta)$ en coordenadas cartesianas:
 
@@ -448,15 +446,15 @@ $$x(\theta) = r(\theta) \cos(\theta), \quad y(\theta) = r(\theta) \sin(\theta)$$
 
 donde $\theta \in [\theta_0, \theta_1]$ (por defecto $[0, 2\pi]$). La curva polar se renderiza como una línea 2-D estándar en el plano cartesiano.
 
-### IV.C Curvas Paramétricas 2-D (`parametric`)
+## Curvas Paramétricas 2-D (`parametric`)
 
 Una curva paramétrica $\gamma(t) = (x(t), y(t))$ para $t \in [t_0, t_1]$ se discretiza en $n = 500$ puntos:
 
 $$\gamma_k = \left(x(t_k), y(t_k)\right), \quad t_k = t_0 + k \cdot \frac{t_1 - t_0}{n - 1}$$
 
-### IV.D Graficación Simbólica
+## Graficación Simbólica
 
-#### IV.D.1 Graficación de Funciones Simbólicas (`fplot`)
+### Graficación de Funciones Simbólicas (`fplot`)
 
 La función `fplot("expr")` utiliza el motor simbólico para convertir una expresión en cadena a una función NumPy evaluable mediante *lambdificación*:
 
@@ -472,7 +470,7 @@ def _safe(v):
     return np.full_like(v, result) if np.ndim(result) == 0 else np.asarray(result)
 ```
 
-#### IV.D.2 Derivada Gráfica (`plotderiv`)
+### Derivada Gráfica (`plotderiv`)
 
 `plotderiv("expr")` grafica simultáneamente $f(x)$ y $f'(x)$:
 
@@ -480,7 +478,7 @@ def _safe(v):
 2. Lambdificar ambas expresiones.
 3. Generar dos `PlotCommand` de tipo `LINE_2D`.
 
-#### IV.D.3 Integral Gráfica (`plotintegral`)
+### Integral Gráfica (`plotintegral`)
 
 `plotintegral("expr", a, b)` visualiza la integral definida:
 
@@ -490,7 +488,7 @@ def _safe(v):
 
 $$\int_a^b f(x)\,dx \approx \sum_{k=0}^{n-2} \frac{f(x_k) + f(x_{k+1})}{2} \cdot (x_{k+1} - x_k)$$
 
-#### IV.D.4 Recta Tangente (`tangentline`)
+### Recta Tangente (`tangentline`)
 
 `tangentline("expr", x₀)` calcula y grafica la recta tangente a $f(x)$ en $x = x_0$:
 
@@ -498,9 +496,9 @@ $$y_{\text{tan}}(x) = f'(x_0) \cdot (x - x_0) + f(x_0)$$
 
 donde $f'(x_0)$ se obtiene mediante diferenciación simbólica y evaluación puntual con SymPy.
 
-### IV.E Graficación 3-D
+## Graficación 3-D
 
-#### IV.E.1 Superficies (`surface`)
+### Superficies (`surface`)
 
 Una superficie $z = f(x, y)$ se renderiza mediante:
 
@@ -514,17 +512,17 @@ $$\text{color}(z) = (1-t) \cdot \text{azul} + t \cdot \text{melocotón}, \quad t
 
 Específicamente: $R = 0.537 + 0.443t$, $G = 0.706 - 0.161t$, $B = 0.980 - 0.451t$, $\alpha = 0.85$.
 
-#### IV.E.2 Wireframes (`wireframe`)
+### Wireframes (`wireframe`)
 
 El wireframe utiliza el mismo `GLSurfacePlotItem` pero con `drawFaces=False` y `drawEdges=True`, mostrando únicamente las aristas de la malla.
 
-#### IV.E.3 Curvas Paramétricas 3-D (`parametric3d`)
+### Curvas Paramétricas 3-D (`parametric3d`)
 
 Una curva paramétrica $\gamma(t) = (x(t), y(t), z(t))$ se renderiza mediante `gl.GLLinePlotItem`:
 
 $$\text{pts}_k = [x(t_k), y(t_k), z(t_k)]^T, \quad k = 0, \ldots, n-1$$
 
-#### IV.E.4 Superficies Paramétricas (`surfparam`)
+### Superficies Paramétricas (`surfparam`)
 
 Una superficie paramétrica $\sigma(u, v) = (x(u,v), y(u,v), z(u,v))$ se discretiza en una rejilla $60 \times 60$ y se renderiza mediante `gl.GLMeshItem`:
 
@@ -534,11 +532,11 @@ Una superficie paramétrica $\sigma(u, v) = (x(u,v), y(u,v), z(u,v))$ se discret
    - $[i \cdot n + j + 1, \; (i+1) \cdot n + j + 1, \; (i+1) \cdot n + j]$
 3. Colorear cada cara según la altura promedio de sus vértices.
 
-#### IV.E.5 Barras 3-D (`bar3d`)
+### Barras 3-D (`bar3d`)
 
 Cada barra se modela como un paralelepípedo (caja) con 8 vértices y 12 caras triangulares, renderizado con `gl.GLMeshItem`.
 
-### IV.F Ciclado Automático de Colores
+## Ciclado Automático de Colores
 
 Ambos renderizadores implementan un ciclo de 10 colores inspirado en la paleta **Catppuccin Mocha**:
 
@@ -548,9 +546,9 @@ Los colores fueron seleccionados para maximizar la distinguibilidad perceptual e
 
 ---
 
-## V. Interfaz Gráfica de Usuario
+# Interfaz Gráfica de Usuario
 
-### V.A Arquitectura de la Ventana Principal
+## Arquitectura de la Ventana Principal
 
 `MainWindow` implementa un diseño basado en **QDockWidget** con paneles acoplables:
 
@@ -558,7 +556,7 @@ Los colores fueron seleccionados para maximizar la distinguibilidad perceptual e
 - **Panel de Salida** (izquierda inferior): Consola de resultados con diferenciación visual de errores.
 - **Canvas** (centro): Widget de graficación dual 2-D/3-D con conmutación automática.
 
-### V.B Resaltado de Sintaxis
+## Resaltado de Sintaxis
 
 `GraphUGHighlighter` aplica coloración basada en expresiones regulares con la paleta Catppuccin:
 
@@ -574,11 +572,11 @@ Los colores fueron seleccionados para maximizar la distinguibilidad perceptual e
 | Operadores | Cian | `#89dceb` |
 | Corchetes | Crema | `#f5e0dc` |
 
-### V.C Sistema de Temas
+## Sistema de Temas
 
 GraphUG incluye **5 temas** predefinidos: Catppuccin Mocha, Catppuccin Latte, Nord, Dracula y Solarized Dark. Cada tema se define como un `Palette` dataclass con 22 propiedades de color. El `ThemeManager` genera QSS completo a partir de la paleta y notifica a los componentes no-QSS (canvas PyQtGraph, resaltador de sintaxis).
 
-### V.D Diálogos de Inserción
+## Diálogos de Inserción
 
 Siete diálogos especializados facilitan la construcción de comandos:
 
@@ -590,7 +588,7 @@ Siete diálogos especializados facilitan la construcción de comandos:
 6. **SettingsDialog**: Configuración de tema y tamaño de fuente.
 7. **AboutDialog**: Información del proyecto.
 
-### V.E Sistema de Logging
+## Sistema de Logging
 
 El sistema de logging utiliza la biblioteca estándar `logging` de Python con:
 
@@ -599,9 +597,9 @@ El sistema de logging utiliza la biblioteca estándar `logging` de Python con:
 
 ---
 
-## VI. Discusión
+# Discusión
 
-### VI.A Decisiones de Diseño
+## Decisiones de Diseño
 
 La elección de LALR(1) sobre PEG o parsers recursivos descendentes se justifica por:
 
@@ -615,11 +613,11 @@ La arquitectura MVC con inyección de dependencias explícita, aunque más verbo
 - **Extensibilidad**: Nuevas primitivas de graficación o backends de evaluación pueden añadirse sin modificar el controlador.
 - **Mantenibilidad**: La separación de capas reduce el acoplamiento.
 
-### VI.B Rendimiento y Escalabilidad
+## Rendimiento y Escalabilidad
 
 La vectorización NumPy permite evaluar funciones sobre arreglos de miles de elementos en microsegundos. La aceleración GPU mediante CuPy ofrece speedups significativos para operaciones de álgebra lineal en matrices grandes ($n > 5000$).
 
-### VI.C Limitaciones
+## Limitaciones
 
 - El parser no soporta definición de funciones por el usuario (`def`).
 - No hay soporte para bucles (`for`, `while`).
@@ -628,7 +626,7 @@ La vectorización NumPy permite evaluar funciones sobre arreglos de miles de ele
 
 ---
 
-## VII. Conclusiones
+# Conclusiones
 
 GraphUG demuestra que es factible construir un entorno matemático interactivo completo utilizando Python y bibliotecas de código abierto. Las contribuciones principales son:
 
@@ -642,7 +640,7 @@ El proyecto valida la viabilidad de combinar análisis sintáctico formal, compu
 
 ---
 
-## VIII. Referencias Completas
+# Referencias Completas
 
 [1] A. V. Aho, M. S. Lam, R. Sethi, y J. D. Ullman, *Compilers: Principles, Techniques, and Tools*, 2.ª ed. Boston, MA, EE. UU.: Pearson/Addison-Wesley, 2007.
 
